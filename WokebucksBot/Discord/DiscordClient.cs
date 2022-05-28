@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Swamp.WokebucksBot.Discord
@@ -31,8 +32,16 @@ namespace Swamp.WokebucksBot.Discord
 				_discordSocketClient.Log += Log;
 				_discordSocketClient.MessageReceived += HandleCommandAsync;
 
+				var stopwatch = new Stopwatch();
+				stopwatch.Start();
 				await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
+				stopwatch.Stop();
+				_logger.LogInformation($"Login successful | {{{"Elapsed Time"}}} ms.", stopwatch.ElapsedMilliseconds);
+
+				stopwatch.Restart();
 				await _discordSocketClient.StartAsync();
+				stopwatch.Stop();
+				_logger.LogInformation($"Successfully started DiscordSocketClient | {{{"Elapsed Time"}}} ms.", stopwatch.ElapsedMilliseconds);
 
 				// Pass the service provider to the second parameter of
 				// AddModulesAsync to inject dependencies to all modules 
