@@ -5,11 +5,13 @@ namespace Swamp.WokebucksBot.Discord
     public class DiscordBotWorker : BackgroundService
     {
         private readonly ILogger<DiscordBotWorker> _logger;
+        private readonly IConfiguration _configuration;
         private readonly DiscordClient _discordClient;
 
-        public DiscordBotWorker(ILogger<DiscordBotWorker> logger, DiscordClient discordClient)
+        public DiscordBotWorker(ILogger<DiscordBotWorker> logger, IConfiguration configuration, DiscordClient discordClient)
         {
             _logger = logger;
+            _configuration = configuration;
             _discordClient = discordClient;
         }
 
@@ -19,8 +21,7 @@ namespace Swamp.WokebucksBot.Discord
             {
                 _logger.LogInformation("Worker running.");
 
-                await _commandHandler.InitializeAsync(Environment.GetEnvironmentVariable("DiscordToken"));
-                await _discordClient.StartAsync();
+                await _discordClient.InitializeAsync(_configuration["DiscordToken"]);
 
                 await Task.Delay(-1, stoppingToken);
             }

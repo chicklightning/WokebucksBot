@@ -19,10 +19,7 @@ namespace Swamp.WokebucksBot.Discord
 			_logger = logger;
 			_services = serviceProvider;
 			_commands = commandService;
-
 			_discordSocketClient = socketClient;
-			_discordSocketClient.Log += Log;
-			_discordSocketClient.MessageReceived += HandleCommandAsync;
 		}
 
 		public async Task InitializeAsync(string discordToken)
@@ -30,6 +27,10 @@ namespace Swamp.WokebucksBot.Discord
 			if(!_isInitialized)
 			{
 				_isInitialized = true;
+
+				_discordSocketClient.Log += Log;
+				_discordSocketClient.MessageReceived += HandleCommandAsync;
+
 				await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
 				await _discordSocketClient.StartAsync();
 
@@ -45,15 +46,14 @@ namespace Swamp.WokebucksBot.Discord
 
 		public async Task HandleCommandAsync(SocketMessage socketMessage)
 		{
-			// Don't process the command if it was a system message
-			var message = socketMessage as SocketUserMessage;
-			if (message == null)
-			{
-				return;
-			}
+            // Don't process the command if it was a system message
+            if (socketMessage is not SocketUserMessage message)
+            {
+                return;
+            }
 
-			// Create a number to track where the prefix ends and the command begins
-			int argPos = 0;
+            // Create a number to track where the prefix ends and the command begins
+            int argPos = 0;
 
 			// Determine if the message is a command based on the prefix and make sure no bots trigger commands
 			if (!(message.HasCharPrefix('$', ref argPos) ||
