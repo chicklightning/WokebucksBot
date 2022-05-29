@@ -20,35 +20,7 @@ namespace Swamp.WokebucksBot
                     string? appConfigEndpoint = Environment.GetEnvironmentVariable("AppConfigEndpoint");
                     if (!string.IsNullOrWhiteSpace(appConfigEndpoint))
                     {
-                        var credentials = new DefaultAzureCredential();
-                        builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigEndpoint), credentials)
-                                                                           .ConfigureKeyVault(kv =>
-                                                                           {
-                                                                               kv.SetCredential(credentials);
-                                                                               kv.SetSecretResolver(identifier =>
-                                                                               {
-                                                                                   string? secretValue = null;
-                                                                                   try
-                                                                                   {
-                                                                                       var secretName = identifier?.Segments?.ElementAtOrDefault(2)?.TrimEnd('/');
-                                                                                       var secretVersion = identifier?.Segments?.ElementAtOrDefault(3)?.TrimEnd('/');
-                                                                                       if (identifier is not null)
-                                                                                       {
-                                                                                           var secretClient = new SecretClient(new Uri(identifier.GetLeftPart(UriPartial.Authority)),
-                                                                                               credentials);
-
-                                                                                           KeyVaultSecret secret = secretClient.GetSecret(secretName, secretVersion);
-                                                                                           secretValue = secret?.Value;
-                                                                                       }
-                                                                                   }
-                                                                                   catch (UnauthorizedAccessException)
-                                                                                   {
-                                                                                       secretValue = string.Empty;
-                                                                                   }
-
-                                                                                   return new ValueTask<string>(secretValue);
-                                                                               });
-                                                                           }));
+                        builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential()));
                     }
                 })
                 .ConfigureServices(services =>
