@@ -69,12 +69,19 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard.TopThreeWokest.ContainsKey(Context.User.GetFullUsername()))
             {
 				embedBuilder.WithColor(Color.Green);
-				embedBuilder.WithTitle($"You are **woke**.");
+				embedBuilder.WithTitle("You are **woke**.");
 			}
-			else
+			else if (leaderboard.BottomThreeWokest.ContainsKey(Context.User.GetFullUsername()))
             {
 				embedBuilder.WithColor(Color.Red);
-				embedBuilder.WithTitle($"You are **not woke**.");
+				embedBuilder.WithTitle("You are **problematic**.");
+
+				embedBuilder.WithImageUrl("https://tenor.com/bD8mV.gif");
+			}
+			else
+			{
+				embedBuilder.WithColor(Color.Green);
+				embedBuilder.WithTitle("You are **not woke**.");
 			}
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
