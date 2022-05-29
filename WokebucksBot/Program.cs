@@ -1,4 +1,5 @@
 using Azure.Identity;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -40,7 +41,16 @@ namespace Swamp.WokebucksBot
                             return new CosmosDBClient(logger, configuration["CosmosDBConnector"], new DefaultAzureCredential());
                         }
                     });
-                    services.AddSingleton<DiscordSocketClient>();
+                    services.AddSingleton<DiscordSocketClient>(serviceProvider =>
+                    {
+                        var config = new DiscordSocketConfig()
+                        {
+                            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions,
+                            AlwaysDownloadUsers = true,
+                        };
+
+                        return new DiscordSocketClient(config);
+                    });
                     services.AddSingleton<CommandService>();
                     services.AddSingleton<DiscordClient>();
                     services.AddHostedService<DiscordBotWorker>();

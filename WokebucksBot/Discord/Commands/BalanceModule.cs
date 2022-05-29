@@ -25,9 +25,21 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[Alias("give", "add")]
 		public async Task GiveWokebuckAsync(
 			[Summary("The user whose balance you want to add a Wokebuck to.")]
-			SocketUser user)
+			SocketUser? target = null)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "givebuck", Context.User.GetFullUsername());
+
+			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			if (user is null)
+            {
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "givebuck", Context.User.GetFullUsername());
+				return;
+            }
+
+			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+			{
+				return;
+			}
 
 			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "givebuck");
 		}
@@ -37,21 +49,45 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[Alias("givebig", "addmuch")]
 		public async Task GiveWokebucksAsync(
 			[Summary("The user whose balance you want to add Wokebucks to.")]
-			SocketUser user)
+			SocketUser? target = null)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
+
+			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			if (user is null)
+			{
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "givebucks", Context.User.GetFullUsername());
+				return;
+			}
+
+			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+			{
+				return;
+			}
 
 			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "givebucks");
 		}
 
 		[Command("takebuck")]
 		[Summary("Takes $1 from another user's Wokebucks balance (allowed once per hour per unique user).")]
-		[Alias("take", "remove")]
+		[Alias("take")]
 		public async Task TakeWokebuckAsync(
 			[Summary("The user whose balance you want to take a Wokebuck from.")]
-			SocketUser user)
+			SocketUser? target = null)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "takebuck", Context.User.GetFullUsername());
+
+			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			if (user is null)
+			{
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "takebuck", Context.User.GetFullUsername());
+				return;
+			}
+
+			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+			{
+				return;
+			}
 
 			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "takebuck");
 		}
@@ -59,12 +95,24 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[RequireOwner]
 		[Command("takebucks")]
 		[Summary("Takes $10 from another user's Wokebucks balance (allowed once per two hours per unique user).")]
-		[Alias("takebig", "removemuch")]
+		[Alias("takebig")]
 		public async Task TakeWokebucksAsync(
 			[Summary("The user whose balance you want to take Wokebucks from.")]
-			SocketUser user)
+			SocketUser? target = null)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "takebucks", Context.User.GetFullUsername());
+
+			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			if (user is null)
+			{
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "takebucks", Context.User.GetFullUsername());
+				return;
+			}
+
+			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+            {
+				return;
+            }
 
 			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "takebucks");
 		}
@@ -84,11 +132,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				await _documentClient.UpsertUserDataAsync(userData);
 			}
 
-			var embed = new Embed(EmbedType.Rich)
-			{
+			var embedBuilder = new EmbedBuilder();
+			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
+			embedBuilder.WithTitle($"${userData.Balance}");
+			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Balance provided by Wokebucks");
 
-			};
-			await ReplyAsync($"Your balance is **${userData.Balance}**.");
+			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
 		}
@@ -108,27 +157,58 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				await _documentClient.UpsertUserDataAsync(userData);
 			}
 
-			await ReplyAsync($"You are {(userData.IsOverdrawn() ? "**not**" : string.Empty)} woke.");
+			var embedBuilder = new EmbedBuilder();
+			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
+			embedBuilder.WithTitle($"You are {(userData.IsOverdrawn() ? "**not** " : string.Empty)}**woke**.");
+			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wokeness provided by Wokebucks");
+
+			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
 		}
 
-		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
+		private async Task<bool> ReactIfSelfWhereNotAllowedAsync(SocketUser caller, SocketUser target, SocketUserMessage userMessage)
         {
 			if (string.Equals(caller.GetFullUsername(), target.GetFullUsername()))
-            {
-				await ReplyAsync("You can't give yourself Wokebucks ~dumbass~.");
-				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
-				return;
-            }
+			{
+				var embedBuilder = new EmbedBuilder();
+				embedBuilder.WithColor(Color.Red);
+				embedBuilder.WithTitle("Invalid Bank Transaction");
+				embedBuilder.WithDescription("You can't change your own Wokebucks ~~dumbass~~.");
+				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
 
+				await ReplyAsync($"", false, embed: embedBuilder.Build());
+
+				var emote = Context.Guild.Emotes
+							.FirstOrDefault(x => x.Name.IndexOf(
+								"OofaDoofa", StringComparison.OrdinalIgnoreCase) != -1);
+				if (emote is not null)
+				{
+					await userMessage.AddReactionAsync(emote);
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
+        {
 			// Check user's relationship to other user to make sure at least an hour has passed
 			UserData? callerData = await _documentClient.GetUserDataAsync(caller.GetFullDatabaseId()) ?? new UserData(caller.GetFullDatabaseId());
 			double minutesSinceLastInteractionWithOtherUser = callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId());
 			if (minutesSinceLastInteractionWithOtherUser < 60)
 			{
 				// If an hour has not passed, send message saying they have not waited an hour since their last Wokebuck gift, and that x minutes are remaining
-				await ReplyAsync($"Sorry, you have to wait at least **{60 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
+				var embedBuilder = new EmbedBuilder();
+				embedBuilder.WithColor(Color.Red);
+				embedBuilder.WithTitle("Invalid Bank Transaction");
+				embedBuilder.WithDescription($"Sorry, you have to wait at least **{60 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
+				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+
+				await ReplyAsync($"", false, embed: embedBuilder.Build());
+
 				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
 			}
 			else // minutesSinceLastInteractionWithOtherUser >= 60
@@ -170,7 +250,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask);
 
-				await ReplyAsync($"New Wokebucks balance for {target.GetFullUsername()} is ${targetData.Balance}.");
+				var embedBuilder = new EmbedBuilder();
+				embedBuilder.WithColor((targetData.IsOverdrawn() ? Color.Red : Color.Green));
+				embedBuilder.WithTitle("Bank Transaction");
+				embedBuilder.AddField($"{(commandName.Contains("take") ? "Victim" : "Recipient")}", $"{target.GetFullUsername()}", true);
+				embedBuilder.AddField("Updated Balance", $"${targetData.Balance}", true);
+				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
+
+				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullDatabaseId(), targetData.ID);
 			}
