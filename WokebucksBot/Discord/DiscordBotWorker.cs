@@ -21,9 +21,22 @@ namespace Swamp.WokebucksBot.Discord
             {
                 _logger.LogInformation("Worker running.");
 
-                await _discordClient.InitializeAsync(_configuration["DiscordToken"]);
-
-                await Task.Delay(-1, stoppingToken);
+                try
+                {
+                    await _discordClient.InitializeAsync(_configuration["DiscordToken"]);
+                    await Task.Delay(-1, stoppingToken);
+                }
+                catch (Exception e)
+                {
+                    if (e is not TaskCanceledException)
+                    {
+                        _logger.LogError(e, "Issue initializing DiscordClient.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
             }
         }
     }

@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
+using Swamp.WokebucksBot.CosmosDB;
 using Swamp.WokebucksBot.Discord;
 
 namespace Swamp.WokebucksBot
@@ -25,6 +26,20 @@ namespace Swamp.WokebucksBot
                     // The following line enables Application Insights telemetry collection.
                     services.AddApplicationInsightsTelemetryWorkerService(instrumentationKey: Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING"));
 
+                    services.AddSingleton<CosmosDBClient>(serviceProvider =>
+                    {
+                        ILogger<CosmosDBClient> logger = serviceProvider.GetRequiredService<ILogger<CosmosDBClient>>();
+                        IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
+
+                        if (string.Equals(configuration["DOTNET_ENVIRONMENT"], "Development"))
+                        {
+                            return new CosmosDBClient(logger, configuration["CosmosDBConnector"]);
+                        }
+                        else
+                        {
+                            return new CosmosDBClient(logger, configuration["CosmosDBConnector"], new DefaultAzureCredential());
+                        }
+                    });
                     services.AddSingleton<DiscordSocketClient>();
                     services.AddSingleton<CommandService>();
                     services.AddSingleton<DiscordClient>();

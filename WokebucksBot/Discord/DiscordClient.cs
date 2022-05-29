@@ -8,6 +8,8 @@ namespace Swamp.WokebucksBot.Discord
 {
     public class DiscordClient : IDisposable
 	{
+		private const string ElapsedTimeKey = "ElapsedTime";
+
 		private readonly IServiceProvider _services;
 		private readonly CommandService _commands;
 		private readonly DiscordSocketClient _discordSocketClient;
@@ -36,12 +38,12 @@ namespace Swamp.WokebucksBot.Discord
 				stopwatch.Start();
 				await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
 				stopwatch.Stop();
-				_logger.LogInformation($"Login successful | {{{"Elapsed Time"}}} ms.", stopwatch.ElapsedMilliseconds);
+				_logger.LogInformation($"Login successful | {{{ElapsedTimeKey}}} ms.", stopwatch.ElapsedMilliseconds);
 
 				stopwatch.Restart();
 				await _discordSocketClient.StartAsync();
 				stopwatch.Stop();
-				_logger.LogInformation($"Successfully started DiscordSocketClient | {{{"Elapsed Time"}}} ms.", stopwatch.ElapsedMilliseconds);
+				_logger.LogInformation($"Successfully started DiscordSocketClient | {{{ElapsedTimeKey}}} ms.", stopwatch.ElapsedMilliseconds);
 
 				// Pass the service provider to the second parameter of
 				// AddModulesAsync to inject dependencies to all modules 
