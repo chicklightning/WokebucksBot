@@ -12,6 +12,8 @@
 
 appsettings.Development.json
 launchSettings.json
+Settings.job
+profile.arm.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

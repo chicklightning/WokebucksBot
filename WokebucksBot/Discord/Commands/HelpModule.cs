@@ -8,10 +8,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
         private const string CommandName = "CommandName";
         private const string UserIdKey = "UserId";
 
-        private readonly ILogger<BalanceModule> _logger;
+        private readonly ILogger<HelpModule> _logger;
         private readonly CommandService _commandService;
 
-        public HelpModule(ILogger<BalanceModule> logger, CommandService commandService)
+        public HelpModule(ILogger<HelpModule> logger, CommandService commandService)
         {
             _logger = logger;
             _commandService = commandService;
