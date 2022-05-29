@@ -16,7 +16,7 @@ namespace Swamp.WokebucksBot
             IHost host = Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration(builder =>
                 {
-                    string appConfigEndpoint = Environment.GetEnvironmentVariable("AppConfigEndpoint");
+                    string? appConfigEndpoint = Environment.GetEnvironmentVariable("AppConfigEndpoint");
                     if (!string.IsNullOrWhiteSpace(appConfigEndpoint))
                     {
                         builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential()));

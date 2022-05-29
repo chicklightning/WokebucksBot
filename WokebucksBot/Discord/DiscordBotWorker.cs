@@ -1,5 +1,3 @@
-using Discord.Commands;
-
 namespace Swamp.WokebucksBot.Discord
 {
     public class DiscordBotWorker : BackgroundService
