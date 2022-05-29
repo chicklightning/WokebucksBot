@@ -5,14 +5,14 @@ namespace Swamp.WokebucksBot.CosmosDB
     public class UserData : IDocument
     {
         [JsonProperty(PropertyName = "balance", Required = Required.Always)]
-        public long Balance { get; set; }
+        public double Balance { get; set; }
 
         [JsonProperty(PropertyName = "lastAccess", Required = Required.Always)]
         public IDictionary<string, DateTimeOffset> LastAccessTimes { get; set; }
 
         public UserData(string id) : base(id)
         {
-            Balance = 0;
+            Balance = 0.00;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
         }
 

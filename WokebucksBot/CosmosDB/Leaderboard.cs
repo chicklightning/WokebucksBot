@@ -5,18 +5,18 @@ namespace Swamp.WokebucksBot.CosmosDB
     public class Leaderboard : IDocument
     {
         [JsonProperty(PropertyName = "ldrbrd", Required = Required.Always)]
-        public IDictionary<string, long> AllUsers { get; set; }
+        public IDictionary<string, double> AllUsers { get; set; }
 
         [JsonProperty(PropertyName = "topThree", Required = Required.Always)]
-        public IDictionary<string, long> TopThreeWokest { get; set; }
+        public IDictionary<string, double> TopThreeWokest { get; set; }
 
         public Leaderboard() : base("leaderboard")
         {
-            AllUsers = new Dictionary<string, long>();
-            TopThreeWokest = new Dictionary<string, long>();
+            AllUsers = new Dictionary<string, double>();
+            TopThreeWokest = new Dictionary<string, double>();
         }
 
-        public void UpdateLeaderboard(string username, long balance)
+        public void UpdateLeaderboard(string username, double balance)
         {
             AllUsers[username] = balance;
             TopThreeWokest = AllUsers
