@@ -19,7 +19,11 @@ namespace Swamp.WokebucksBot
                     string? appConfigEndpoint = Environment.GetEnvironmentVariable("AppConfigEndpoint");
                     if (!string.IsNullOrWhiteSpace(appConfigEndpoint))
                     {
-                        builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential()));
+                        builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+                                                                           .ConfigureKeyVault(kv =>
+                                                                           {
+                                                                               kv.SetCredential(new DefaultAzureCredential());
+                                                                           }));
                     }
                 })
                 .ConfigureServices(services =>
