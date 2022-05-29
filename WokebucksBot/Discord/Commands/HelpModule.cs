@@ -18,16 +18,17 @@ namespace Swamp.WokebucksBot.Discord.Commands
         }
 
         [Command("info")]
+        [Summary("Provides information on other commands and how they're used and called.")]
         public async Task CommandInfo()
         {
-            _logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "help", Context.User.GetFullUsername());
+            _logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "info", Context.User.GetFullUsername());
 
             List<CommandInfo> commands = _commandService.Commands.ToList();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithTitle("Wokebucks Bot Commands");
             embedBuilder.WithColor(Color.Gold);
-            embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Help Request resolved by Wokebucks");
+            embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Info Request resolved by Wokebucks");
             foreach (CommandInfo command in commands)
             {
                 // Get the command Summary attribute information

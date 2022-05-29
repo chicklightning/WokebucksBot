@@ -28,6 +28,7 @@ namespace Swamp.WokebucksBot
                     // The following line enables Application Insights telemetry collection.
                     services.AddApplicationInsightsTelemetryWorkerService(instrumentationKey: Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY"));
 
+                    services.AddSingleton<CommandService>();
                     services.AddSingleton<CosmosDBClient>(serviceProvider =>
                     {
                         ILogger<CosmosDBClient> logger = serviceProvider.GetRequiredService<ILogger<CosmosDBClient>>();
@@ -52,7 +53,6 @@ namespace Swamp.WokebucksBot
 
                         return new DiscordSocketClient(config);
                     });
-                    services.AddSingleton<CommandService>();
                     services.AddSingleton<DiscordClient>();
                     services.AddHostedService<DiscordBotWorker>();
 
