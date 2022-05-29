@@ -25,7 +25,7 @@ namespace Swamp.WokebucksBot
                 .ConfigureServices(services =>
                 {
                     // The following line enables Application Insights telemetry collection.
-                    services.AddApplicationInsightsTelemetryWorkerService(instrumentationKey: Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING"));
+                    services.AddApplicationInsightsTelemetryWorkerService(instrumentationKey: Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY"));
 
                     services.AddSingleton<CosmosDBClient>(serviceProvider =>
                     {
