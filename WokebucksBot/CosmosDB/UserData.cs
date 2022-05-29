@@ -2,20 +2,16 @@
 
 namespace Swamp.WokebucksBot.CosmosDB
 {
-    public class UserData
+    public class UserData : IDocument
     {
-        [JsonProperty(PropertyName = "id", Required = Required.Always)]
-        public string ID { get; }
-
         [JsonProperty(PropertyName = "balance", Required = Required.Always)]
         public long Balance { get; set; }
 
         [JsonProperty(PropertyName = "lastAccess", Required = Required.Always)]
         public IDictionary<string, DateTimeOffset> LastAccessTimes { get; set; }
 
-        public UserData(string id)
+        public UserData(string id) : base(id)
         {
-            ID = id;
             Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
         }

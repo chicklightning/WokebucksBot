@@ -5,7 +5,7 @@ namespace Swamp.WokebucksBot.CosmosDB
 {
     public class CosmosDBClient : IDisposable
     {
-        private const string UserIdKey = "UserId";
+        private const string DocumentIdKey = "DocumentId";
 
         private readonly ILogger<CosmosDBClient> _logger;
         private readonly CosmosClient _cosmosClient;
@@ -27,12 +27,12 @@ namespace Swamp.WokebucksBot.CosmosDB
             _container = _cosmosClient.GetContainer("Wokebucks", "UserBalances");
         }
 
-        public async Task<UserData?> GetUserDataAsync(string userId)
+        public async Task<T?> GetDocumentAsync<T>(string id) where T : IDocument
         {
-            UserData userData;
+            T document;
             try
             {
-                userData = await _container.ReadItemAsync<UserData>(userId, new PartitionKey(userId));
+                document = await _container.ReadItemAsync<T>(id, new PartitionKey(id));
             }
             catch (Exception e)
             {
@@ -41,27 +41,27 @@ namespace Swamp.WokebucksBot.CosmosDB
                 {
                     if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
-                        _logger.LogInformation($"No data for user with ID <{{{UserIdKey}}}>.", userId);
+                        _logger.LogInformation($"No document with ID <{{{DocumentIdKey}}}>.", id);
                         return null;
                     }
                 }
 
-                _logger.LogError(e, $"Unable to retrieve data for user with ID <{{{UserIdKey}}}>.", userId);
+                _logger.LogError(e, $"Unable to retrieve document with ID <{{{DocumentIdKey}}}>.", id);
                 throw;
             }
              
-            return userData;
+            return document;
         }
 
-        public async Task UpsertUserDataAsync(UserData userData)
+        public async Task UpsertDocumentAsync<T>(T data) where T : IDocument
         {
             try
             {
-                await _container.UpsertItemAsync(userData);
+                await _container.UpsertItemAsync(data);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Unable to upsert data for user with ID <{{{UserIdKey}}}>.", userData.ID);
+                _logger.LogError(e, $"Unable to upsert document with ID <{{{DocumentIdKey}}}>.", data.ID);
                 throw;
             }
         }

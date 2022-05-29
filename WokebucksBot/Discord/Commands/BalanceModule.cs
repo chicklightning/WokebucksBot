@@ -124,12 +124,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
 
-			UserData? userData = await _documentClient.GetUserDataAsync(Context.User.GetFullDatabaseId());
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
 
 			if (userData is null)
 			{
 				userData = new UserData(Context.User.GetFullDatabaseId());
-				await _documentClient.UpsertUserDataAsync(userData);
+				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 
 			var embedBuilder = new EmbedBuilder();
@@ -140,31 +140,6 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
-		}
-
-		[Command("amiwoke")]
-		[Summary("Are you woke?")]
-		[Alias("woke", "help")]
-		public async Task AmIWokeAsync()
-		{
-			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
-
-			UserData? userData = await _documentClient.GetUserDataAsync(Context.User.GetFullDatabaseId());
-
-			if (userData is null)
-			{
-				userData = new UserData(Context.User.GetFullDatabaseId());
-				await _documentClient.UpsertUserDataAsync(userData);
-			}
-
-			var embedBuilder = new EmbedBuilder();
-			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
-			embedBuilder.WithTitle($"You are {(userData.IsOverdrawn() ? "**not** " : string.Empty)}**woke**.");
-			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wokeness provided by Wokebucks");
-
-			await ReplyAsync($"", false, embed: embedBuilder.Build());
-
-			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
 		}
 
 		private async Task<bool> ReactIfSelfWhereNotAllowedAsync(SocketUser caller, SocketUser target, SocketUserMessage userMessage)
@@ -196,7 +171,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
         {
 			// Check user's relationship to other user to make sure at least an hour has passed
-			UserData? callerData = await _documentClient.GetUserDataAsync(caller.GetFullDatabaseId()) ?? new UserData(caller.GetFullDatabaseId());
+			UserData? callerData = await _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId()) ?? new UserData(caller.GetFullDatabaseId());
 			double minutesSinceLastInteractionWithOtherUser = callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId());
 			if (minutesSinceLastInteractionWithOtherUser < 60)
 			{
@@ -214,7 +189,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			else // minutesSinceLastInteractionWithOtherUser >= 60
 			{
 				// If hour has passed, allow user to give other user a Wokebuck, send an updated balance for the other user, and update most recent interaction for the caller
-				UserData targetData = await _documentClient.GetUserDataAsync(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
+				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
 				
 				switch (commandName)
                 {
@@ -245,8 +220,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
                 }
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
-				Task updateTargetDataTask = _documentClient.UpsertUserDataAsync(targetData);
-				Task updateCallerDataTask = _documentClient.UpsertUserDataAsync(callerData);
+				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
+				Task updateCallerDataTask = _documentClient.UpsertDocumentAsync<UserData>(callerData);
 
 				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask);
 
