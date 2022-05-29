@@ -28,7 +28,7 @@ namespace Swamp.WokebucksBot.CosmosDB
                              .Take(3)
                              .ToDictionary(x => x.Key, x => x.Value);
 
-            TopThreeWokest = AllUsers
+            BottomThreeWokest = AllUsers
                              .OrderBy(x => x.Value)
                              .Take(3)
                              .ToDictionary(x => x.Key, x => x.Value);
