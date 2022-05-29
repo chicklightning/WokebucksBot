@@ -34,7 +34,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
                 // Get the command Summary attribute information
                 string embedFieldText = command.Summary ?? "No description available\n";
 
-                embedBuilder.AddField(command.Name, embedFieldText);
+                embedBuilder.AddField($"${command.Name}", embedFieldText);
             }
 
             await ReplyAsync("", false, embedBuilder.Build());
