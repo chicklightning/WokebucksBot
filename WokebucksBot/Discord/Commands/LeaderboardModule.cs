@@ -29,7 +29,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "leaderboard", Context.User.GetFullUsername());
 				throw e;
 			}
 
@@ -38,7 +38,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("Leaderboard");
 			foreach (var leaderboardKeyValuePair in leaderboard.TopThreeWokest)
 			{
-				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", $"${leaderboardKeyValuePair.Value}");
+				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", "$" + string.Format("{0:0.00}", leaderboardKeyValuePair.Value));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Leaderboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
@@ -59,7 +59,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "skeeterboard", Context.User.GetFullUsername());
 				throw e;
 			}
 
@@ -68,7 +68,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("Skeeterboard");
 			foreach (var leaderboardKeyValuePair in leaderboard.BottomThreeWokest)
 			{
-				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", $"${leaderboardKeyValuePair.Value}");
+				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", "$" + string.Format("{0:0.00}", leaderboardKeyValuePair.Value));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Skeeterboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
@@ -90,7 +90,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
 				throw e;
 			}
 
@@ -104,14 +104,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 			else if (leaderboard.BottomThreeWokest.ContainsKey(Context.User.GetFullUsername()))
             {
-				embedBuilder.WithColor(Color.Red);
+				embedBuilder.WithColor(Color.DarkRed);
 				embedBuilder.WithTitle("You are **problematic**.");
 
 				embedBuilder.WithImageUrl("https://c.tenor.com/menhdadhvLgAAAAC/problematic-bo.gif");
 			}
 			else
 			{
-				embedBuilder.WithColor(Color.Green);
+				embedBuilder.WithColor(Color.Red);
 				embedBuilder.WithTitle("You are **not woke**.");
 			}
 

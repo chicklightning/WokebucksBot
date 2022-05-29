@@ -134,7 +134,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
-			embedBuilder.WithTitle($"${userData.Balance}");
+			embedBuilder.WithTitle("$" + string.Format("{0:0.00}", userData.Balance));
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Balance provided by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
@@ -250,7 +250,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithColor((targetData.IsOverdrawn() ? Color.Red : Color.Green));
 				embedBuilder.WithTitle("Bank Transaction");
 				embedBuilder.AddField($"{(commandName.Contains("take") ? "Victim" : "Recipient")}", $"{target.GetFullUsername()}", true);
-				embedBuilder.AddField("Updated Balance", $"${targetData.Balance}", true);
+				embedBuilder.AddField("Updated Balance", "$" + string.Format("{0:0.00}", targetData.Balance), true);
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 

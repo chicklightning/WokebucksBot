@@ -12,7 +12,7 @@ namespace Swamp.WokebucksBot.CosmosDB
 
         public UserData(string id) : base(id)
         {
-            Balance = 0.00;
+            Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
         }
 
