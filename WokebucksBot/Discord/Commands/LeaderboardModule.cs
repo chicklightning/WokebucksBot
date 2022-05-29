@@ -107,7 +107,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithColor(Color.Red);
 				embedBuilder.WithTitle("You are **problematic**.");
 
-				embedBuilder.WithImageUrl("https://c.tenor.com/menhdadhvLgAAAAC/problematic-bo.gif");$
+				embedBuilder.WithImageUrl("https://c.tenor.com/menhdadhvLgAAAAC/problematic-bo.gif");
 			}
 			else
 			{
