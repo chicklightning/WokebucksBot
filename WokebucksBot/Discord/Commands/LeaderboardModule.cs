@@ -96,6 +96,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wokeness provided by Wokebucks");
+			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 			if (leaderboard.TopThreeWokest.ContainsKey(Context.User.GetFullUsername()))
             {
 				embedBuilder.WithColor(Color.Green);
@@ -106,8 +107,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithColor(Color.Red);
 				embedBuilder.WithTitle("You are **problematic**.");
 
-				embedBuilder.WithImageUrl("https://c.tenor.com/menhdadhvLgAAAAC/problematic-bo.gif");
-
+				embedBuilder.WithImageUrl("https://c.tenor.com/menhdadhvLgAAAAC/problematic-bo.gif");$
 			}
 			else
 			{
