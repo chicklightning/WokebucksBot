@@ -236,21 +236,13 @@ namespace Swamp.WokebucksBot.Discord.Commands
                     }
                 }
 
-				bool writeToLeaderboard = false;
-				foreach (var item in leaderboard.TopThreeWokest)
-                {
-					if (targetData.Balance > item.Value)
-                    {
-						writeToLeaderboard = true;
-						leaderboard.TopThreeWokest.Remove(item.Key);
-						leaderboard.TopThreeWokest.Add(target.GetFullUsername(), targetData.Balance);
-                    }
-                }  
+				// Update leaderboard
+				leaderboard.UpdateLeaderboard(target.GetFullUsername(), targetData.Balance);
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
 				Task updateCallerDataTask = _documentClient.UpsertDocumentAsync<UserData>(callerData);
-				Task updateLeaderboard = writeToLeaderboard ? _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard) : Task.CompletedTask;
+				Task updateLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
 
 				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);
 
