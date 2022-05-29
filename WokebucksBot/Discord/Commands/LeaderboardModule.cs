@@ -29,7 +29,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, "Could not find leaderboard.");
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
 				throw e;
 			}
 
@@ -48,6 +48,36 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "leaderboard", Context.User.GetFullUsername());
 		}
 
+		[Command("skeeterboard")]
+		[Summary("Who is the most problematic?")]
+		public async Task FetchSkeeterboardAsync()
+		{
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "skeeterboard", Context.User.GetFullUsername());
+
+			Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+
+			if (leaderboard is null)
+			{
+				var e = new InvalidOperationException("Could not find leaderboard.");
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
+				throw e;
+			}
+
+			var embedBuilder = new EmbedBuilder();
+			embedBuilder.WithColor(Color.Gold);
+			embedBuilder.WithTitle("Skeeterboard");
+			foreach (var leaderboardKeyValuePair in leaderboard.BottomThreeWokest)
+			{
+				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", $"${leaderboardKeyValuePair.Value}");
+			}
+			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Skeeterboard Request handled by Wokebucks");
+			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+
+			await ReplyAsync($"", false, embed: embedBuilder.Build());
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "skeeterboard", Context.User.GetFullUsername());
+		}
+
 		[Command("amiwoke")]
 		[Summary("Are you woke?")]
 		[Alias("woke", "help")]
@@ -60,7 +90,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, "Could not find leaderboard.");
+				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
 				throw e;
 			}
 
