@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Swamp.WokebucksBot.CosmosDB;
 
@@ -58,7 +59,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[RequireOwner]
 		[Command("takebucks")]
 		[Summary("Takes $10 from another user's Wokebucks balance (allowed once per two hours per unique user).")]
-		[Alias("take", "remove")]
+		[Alias("takebig", "removemuch")]
 		public async Task TakeWokebucksAsync(
 			[Summary("The user whose balance you want to take Wokebucks from.")]
 			SocketUser user)
@@ -78,19 +79,46 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			UserData? userData = await _documentClient.GetUserDataAsync(Context.User.GetFullDatabaseId());
 
 			if (userData is null)
-            {
+			{
 				userData = new UserData(Context.User.GetFullDatabaseId());
 				await _documentClient.UpsertUserDataAsync(userData);
-            }
+			}
 
-			await ReplyAsync($"Your balance is ${userData.Balance}.");
+			var embed = new Embed(EmbedType.Rich)
+			{
+
+			};
+			await ReplyAsync($"Your balance is **${userData.Balance}**.");
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
+		}
+
+		[Command("amiwoke")]
+		[Summary("Are you woke?")]
+		[Alias("woke", "help")]
+		public async Task AmIWokeAsync()
+		{
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
+
+			UserData? userData = await _documentClient.GetUserDataAsync(Context.User.GetFullDatabaseId());
+
+			if (userData is null)
+			{
+				userData = new UserData(Context.User.GetFullDatabaseId());
+				await _documentClient.UpsertUserDataAsync(userData);
+			}
+
+			await ReplyAsync($"You are {(userData.IsOverdrawn() ? "**not**" : string.Empty)} woke.");
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "amiwoke", Context.User.GetFullUsername());
 		}
 
 		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
         {
 			if (string.Equals(caller.GetFullUsername(), target.GetFullUsername()))
             {
-				await ReplyAsync("You can't give yourself Wokebucks dumbass.");
+				await ReplyAsync("You can't give yourself Wokebucks ~dumbass~.");
+				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
 				return;
             }
 
@@ -100,7 +128,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (minutesSinceLastInteractionWithOtherUser < 60)
 			{
 				// If an hour has not passed, send message saying they have not waited an hour since their last Wokebuck gift, and that x minutes are remaining
-				await ReplyAsync($"Sorry, you have to wait at least {60 - minutesSinceLastInteractionWithOtherUser} before you can give Wokebucks to or remove Wokebucks from {target.GetFullUsername()}'s balance.");
+				await ReplyAsync($"Sorry, you have to wait at least **{60 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
+				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
 			}
 			else // minutesSinceLastInteractionWithOtherUser >= 60
 			{

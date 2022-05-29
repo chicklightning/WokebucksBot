@@ -16,6 +16,8 @@ namespace Swamp.WokebucksBot.Discord
 		private readonly ILogger<DiscordClient> _logger;
 		private bool _isInitialized = false;
 		private bool _disposed = false;
+
+		private SocketMessage? _lastCommand = null;
 		
 		public DiscordClient(ILogger<DiscordClient> logger, IServiceProvider serviceProvider, DiscordSocketClient socketClient, CommandService commandService)
 		{
@@ -57,11 +59,14 @@ namespace Swamp.WokebucksBot.Discord
 
 		public async Task HandleCommandAsync(SocketMessage socketMessage)
 		{
-            // Don't process the command if it was a system message
-            if (socketMessage is not SocketUserMessage message)
+            // Don't process the command if it was a system message or if it was a duplicate command (they seem to get sent every time, not sure why)
+            if (socketMessage is not SocketUserMessage message ||
+				(_lastCommand is not null && string.Equals(_lastCommand.CleanContent, socketMessage.CleanContent) && (socketMessage.Timestamp - _lastCommand.Timestamp).TotalSeconds < 60))
             {
                 return;
             }
+
+			_lastCommand = socketMessage;
 
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;

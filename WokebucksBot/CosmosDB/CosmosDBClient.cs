@@ -32,7 +32,7 @@ namespace Swamp.WokebucksBot.CosmosDB
             UserData userData;
             try
             {
-                userData = await _container.ReadItemAsync<UserData>(userId, PartitionKey.None);
+                userData = await _container.ReadItemAsync<UserData>(userId, new PartitionKey(userId));
             }
             catch (Exception e)
             {
