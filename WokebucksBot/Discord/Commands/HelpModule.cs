@@ -17,8 +17,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
             _commandService = commandService;
         }
 
-        [Command("help")]
-        public async Task Help()
+        [Command("info")]
+        public async Task CommandInfo()
         {
             _logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "help", Context.User.GetFullUsername());
 
