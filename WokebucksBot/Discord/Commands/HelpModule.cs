@@ -29,6 +29,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
             embedBuilder.WithTitle("Wokebucks Bot Commands");
             embedBuilder.WithColor(Color.Gold);
             embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Info Request resolved by Wokebucks");
+            embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
             foreach (CommandInfo command in commands)
             {
                 // Get the command Summary attribute information

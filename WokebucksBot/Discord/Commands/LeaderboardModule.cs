@@ -38,9 +38,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("Leaderboard");
 			foreach (var leaderboardKeyValuePair in leaderboard.TopThreeWokest)
 			{
-				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", $"{leaderboardKeyValuePair.Value}");
+				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", $"${leaderboardKeyValuePair.Value}");
 			}
-			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Leaderboard Request handled by [Wokebucks](https://github.com/chicklightning/WokebucksBot)");
+			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Leaderboard Request handled by Wokebucks");
+			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 

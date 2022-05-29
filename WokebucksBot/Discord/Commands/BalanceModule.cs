@@ -136,6 +136,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
 			embedBuilder.WithTitle($"${userData.Balance}");
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Balance provided by Wokebucks");
+			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -151,6 +152,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithTitle("Invalid Bank Transaction");
 				embedBuilder.WithDescription("You can't change your own Wokebucks ~~dumbass~~.");
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -171,7 +173,21 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
         {
 			// Check user's relationship to other user to make sure at least an hour has passed
-			UserData? callerData = await _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId()) ?? new UserData(caller.GetFullDatabaseId());
+			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId());
+			Task<Leaderboard?> leaderboardFetchTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+
+			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask);
+
+			UserData callerData = await callerDataFetchTask ?? new UserData(caller.GetFullDatabaseId());
+			Leaderboard? leaderboard = await leaderboardFetchTask;
+
+			if (leaderboard is null)
+			{
+				var e = new InvalidOperationException("Could not find leaderboard.");
+				_logger.LogError(e, "Could not find leaderboard.");
+				throw e;
+			}
+
 			double minutesSinceLastInteractionWithOtherUser = callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId());
 			if (minutesSinceLastInteractionWithOtherUser < 60)
 			{
@@ -181,6 +197,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithTitle("Invalid Bank Transaction");
 				embedBuilder.WithDescription($"Sorry, you have to wait at least **{60 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -219,11 +236,23 @@ namespace Swamp.WokebucksBot.Discord.Commands
                     }
                 }
 
+				bool writeToLeaderboard = false;
+				foreach (var item in leaderboard.TopThreeWokest)
+                {
+					if (targetData.Balance > item.Value)
+                    {
+						writeToLeaderboard = true;
+						leaderboard.TopThreeWokest.Remove(item.Key);
+						leaderboard.TopThreeWokest.Add(target.GetFullUsername(), targetData.Balance);
+                    }
+                }  
+
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
 				Task updateCallerDataTask = _documentClient.UpsertDocumentAsync<UserData>(callerData);
+				Task updateLeaderboard = writeToLeaderboard ? _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard) : Task.CompletedTask;
 
-				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask);
+				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);
 
 				var embedBuilder = new EmbedBuilder();
 				embedBuilder.WithColor((targetData.IsOverdrawn() ? Color.Red : Color.Green));
@@ -231,6 +260,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.AddField($"{(commandName.Contains("take") ? "Victim" : "Recipient")}", $"{target.GetFullUsername()}", true);
 				embedBuilder.AddField("Updated Balance", $"${targetData.Balance}", true);
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
+				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
