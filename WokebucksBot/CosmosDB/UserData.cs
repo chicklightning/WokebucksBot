@@ -16,24 +16,14 @@ namespace Swamp.WokebucksBot.CosmosDB
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
         }
 
-        public void AddDollarToBalance()
+        public void AddToBalance(double amount)
         {
-            Balance += 1;
+            Balance += amount;
         }
 
-        public void AddTenDollarsToBalance()
+        public void SubtractFromBalance(double amount)
         {
-            Balance += 10;
-        }
-
-        public void SubtractDollarFromBalance()
-        {
-            Balance -= 1;
-        }
-
-        public void SubtractTenDollarsFromBalance()
-        {
-            Balance -= 10;
+            Balance -= amount;
         }
 
         /// <summary>

@@ -192,7 +192,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			// Bot owner can call commands unlimited times
 			IApplication application = await context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			double minutesSinceLastInteractionWithOtherUser = !(context.User.Id != application.Owner.Id) ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
+			double minutesSinceLastInteractionWithOtherUser = context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining
