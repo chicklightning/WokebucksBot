@@ -25,9 +25,22 @@ namespace Swamp.WokebucksBot.CosmosDB
 
         public void UpdateLeaderboard(SocketCommandContext context, SocketUser socketUser, double balance)
         {
-            // Add guild if not present and update balance
-            AllUsers[socketUser.GetFullDatabaseId()].Balance = balance;
-            AllUsers[socketUser.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
+            // Add user to leaderboard if they aren't there already
+            if (!AllUsers.ContainsKey(socketUser.GetFullDatabaseId()))
+            {
+                AllUsers[socketUser.GetFullDatabaseId()] = new LeaderboardReference()
+                {
+                    Balance = balance,
+                    Guilds = new HashSet<string>() { context.Guild.Id.ToString() },
+                    Username = socketUser.GetFullUsername()
+                };
+            }
+            else
+            {
+                // Add guild if not present and update balance
+                AllUsers[socketUser.GetFullDatabaseId()].Balance = balance;
+                AllUsers[socketUser.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
+            }
 
             // Redo leaderboards for the guilds this user is in
             foreach (string guild in AllUsers[socketUser.GetFullDatabaseId()].Guilds)

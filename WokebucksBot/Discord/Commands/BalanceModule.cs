@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using ProfanityFilter;
 using Swamp.WokebucksBot.CosmosDB;
 
 namespace Swamp.WokebucksBot.Discord.Commands
@@ -28,7 +27,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		public async Task GiveWokebuckAsync(
 			[Summary("The amount of Wokebucks you want to add, between 0.01 and 10.")]
 			double amount,
-			[Summary("The reason you are taking their Wokebucks.")]
+			[Summary("The reason you are giving them Wokebucks.")]
 			string reason,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
@@ -58,7 +57,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			var filter = new ProfanityFilter.ProfanityFilter();
-			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "givebuck", Math.Round(amount, 2));
+			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "givebucks", Math.Round(amount, 2));
 		}
 
 		[Command("takebucks")]
@@ -217,8 +216,6 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			else // minutesSinceLastInteractionWithOtherUser >= 5
 			{
 				// Let the bot owner do whatever amount, others can only subtract at most 5 or add at most 10
-				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
-
 				if (Context.User.Id != application.Owner.Id && (amount > 10 || amount < -5))
                 {
 					// If amount needs to be within bounds for normal users
@@ -228,6 +225,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 					return;
 				}
 
+				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
 				targetData.AddToBalance(amount);
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 

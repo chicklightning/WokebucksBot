@@ -99,12 +99,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			string guildId = Context.Guild.Id.ToString();
-			if (leaderboard.MostWoke.ContainsKey(guildId) && leaderboard.MostWoke[guildId].ContainsKey(Context.User.GetFullUsername()))
+			if (leaderboard.MostWoke.ContainsKey(guildId) && leaderboard.MostWoke[guildId].ContainsKey(Context.User.GetFullDatabaseId()))
             {
 				embedBuilder.WithColor(Color.Green);
 				embedBuilder.WithTitle("You are **woke**.");
 			}
-			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.GetFullUsername()))
+			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.GetFullDatabaseId()))
             {
 				embedBuilder.WithColor(Color.DarkRed);
 				embedBuilder.WithTitle("You are **problematic**.");
