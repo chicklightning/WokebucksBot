@@ -144,7 +144,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle($"{Context.User.GetFullUsername()}'s Latest Transactions");
 			foreach (var transaction in userData.TransactionLog)
 			{
-				embedBuilder.AddField($"[{transaction.TimeStamp.LocalDateTime}] **{transaction.TransactionInitiator}** {((transaction.Amount > 0) ? "gave" : "took")} ${transaction.Amount}.", $"{transaction.Comment}");
+				embedBuilder.AddField($"[{transaction.TimeStamp.DateTime}] **{transaction.TransactionInitiator}** {((transaction.Amount > 0) ? "gave" : "took")} ${Math.Abs(transaction.Amount)}.", $"{transaction.Comment}");
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transactions Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
