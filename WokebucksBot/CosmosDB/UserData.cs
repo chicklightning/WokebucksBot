@@ -21,11 +21,6 @@ namespace Swamp.WokebucksBot.CosmosDB
             Balance += amount;
         }
 
-        public void SubtractFromBalance(double amount)
-        {
-            Balance -= amount;
-        }
-
         /// <summary>
         /// Returns Double.MaxValue if there is no recorded interaction between these users.
         /// </summary>
