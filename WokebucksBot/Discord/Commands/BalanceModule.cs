@@ -57,7 +57,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			var filter = new ProfanityFilter.ProfanityFilter();
-			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "givebucks", Math.Round(amount, 2));
+			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason.Substring(0, 100)), "givebucks", Math.Round(amount, 2));
 		}
 
 		[Command("takebucks")]
@@ -95,7 +95,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			var filter = new ProfanityFilter.ProfanityFilter();
-			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "takebucks", Math.Round(amount * -1, 2));
+			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason.Substring(0, 100)), "takebucks", Math.Round(amount * -1, 2));
 		}
 
 		[Command("balance")]
