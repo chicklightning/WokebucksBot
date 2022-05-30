@@ -193,13 +193,13 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			// Bot owner can call commands unlimited times
 			IApplication application = await context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
 			double minutesSinceLastInteractionWithOtherUser = !(context.User.Id != application.Owner.Id) ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
-			if (minutesSinceLastInteractionWithOtherUser < 60)
+			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
-				// If an hour has not passed, send message saying they have not waited an hour since their last Wokebuck gift, and that x minutes are remaining
+				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining
 				var embedBuilder = new EmbedBuilder();
 				embedBuilder.WithColor(Color.Red);
 				embedBuilder.WithTitle("Invalid Bank Transaction");
-				embedBuilder.WithDescription($"Sorry, you have to wait at least **{60 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
+				embedBuilder.WithDescription($"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
