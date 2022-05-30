@@ -38,7 +38,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("Leaderboard");
 			foreach (var leaderboardReference in leaderboard.MostWoke[Context.Guild.Id.ToString()])
 			{
-				embedBuilder.AddField($"{leaderboardReference.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Balance));
+				embedBuilder.AddField($"{leaderboardReference.Value.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Value.Balance));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Leaderboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
@@ -68,7 +68,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("Skeeterboard");
 			foreach (var leaderboardReference in leaderboard.LeastWoke[Context.Guild.Id.ToString()])
 			{
-				embedBuilder.AddField($"{leaderboardReference.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Balance));
+				embedBuilder.AddField($"{leaderboardReference.Value.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Value.Balance));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Skeeterboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
@@ -97,12 +97,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wokeness provided by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
-			if (leaderboard.TopThreeWokest.ContainsKey(Context.User.GetFullUsername()))
+
+			string guildId = Context.Guild.Id.ToString();
+			if (leaderboard.MostWoke.ContainsKey(guildId) && leaderboard.MostWoke[guildId].ContainsKey(Context.User.GetFullUsername()))
             {
 				embedBuilder.WithColor(Color.Green);
 				embedBuilder.WithTitle("You are **woke**.");
 			}
-			else if (leaderboard.BottomThreeWokest.ContainsKey(Context.User.GetFullUsername()))
+			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.GetFullUsername()))
             {
 				embedBuilder.WithColor(Color.DarkRed);
 				embedBuilder.WithTitle("You are **problematic**.");

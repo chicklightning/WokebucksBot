@@ -10,16 +10,16 @@ namespace Swamp.WokebucksBot.CosmosDB
         public IDictionary<string, LeaderboardReference> AllUsers { get; set; }
 
         [JsonProperty(PropertyName = "most", Required = Required.Always)]
-        public IDictionary<string, IList<LeaderboardReference>> MostWoke { get; set; }
+        public IDictionary<string, IDictionary<string, LeaderboardReference>> MostWoke { get; set; }
 
         [JsonProperty(PropertyName = "least", Required = Required.Always)]
-        public IDictionary<string, IList<LeaderboardReference>> LeastWoke { get; set; }
+        public IDictionary<string, IDictionary<string, LeaderboardReference>> LeastWoke { get; set; }
 
         public Leaderboard() : base("leaderboard")
         {
             AllUsers = new Dictionary<string, LeaderboardReference>();
-            MostWoke = new Dictionary<string, IList<LeaderboardReference>>();
-            LeastWoke = new Dictionary<string, IList<LeaderboardReference>>();
+            MostWoke = new Dictionary<string, IDictionary<string, LeaderboardReference>>();
+            LeastWoke = new Dictionary<string, IDictionary<string, LeaderboardReference>>();
         }
 
         public void UpdateLeaderboard(SocketCommandContext context, double balance)
@@ -35,15 +35,13 @@ namespace Swamp.WokebucksBot.CosmosDB
                                      .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
                                      .OrderByDescending(userLeaderboardPair => userLeaderboardPair.Value.Balance)
                                      .Take(3)
-                                     .Select(x => x.Value)
-                                     .ToList();
+                                     .ToDictionary(x => x.Key, x => x.Value);
 
                 LeastWoke[guild] = AllUsers
                                      .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
                                      .OrderBy(userLeaderboardPair => userLeaderboardPair.Value.Balance)
                                      .Take(3)
-                                     .Select(x => x.Value)
-                                     .ToList();
+                                     .ToDictionary(x => x.Key, x => x.Value);
             }
         }
     }
