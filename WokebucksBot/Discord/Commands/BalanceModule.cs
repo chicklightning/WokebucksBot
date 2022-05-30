@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using ProfanityFilter;
 using Swamp.WokebucksBot.CosmosDB;
 
 namespace Swamp.WokebucksBot.Discord.Commands
@@ -25,6 +26,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		public async Task GiveWokebuckAsync(
 			[Summary("The amount of Wokebucks you want to add, between 0.01 and 10.")]
 			double amount,
+			[Summary("The reason you are taking their Wokebucks.")]
+			string reason,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
 		{
@@ -52,7 +55,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(application, user, reason, "givebuck", Math.Round(amount, 2));
+			var filter = new ProfanityFilter.ProfanityFilter();
+			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "givebuck", Math.Round(amount, 2));
 		}
 
 		[Command("takebucks")]
@@ -89,7 +93,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(application, user, reason, "takebucks", Math.Round(amount * -1, 2));
+			var filter = new ProfanityFilter.ProfanityFilter();
+			await CheckUserInteractionsAndUpdateBalances(application, user, filter.CensorString(reason), "takebucks", Math.Round(amount * -1, 2));
 		}
 
 		[Command("balance")]
@@ -116,6 +121,35 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
+		}
+
+		[Command("transactions")]
+		[Summary("Checks your last ten transactions.")]
+		public async Task CheckTransactionsAsync()
+		{
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "transactions", Context.User.GetFullUsername());
+
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
+
+			if (userData is null)
+			{
+				userData = new UserData(Context.User.GetFullDatabaseId());
+				await _documentClient.UpsertDocumentAsync<UserData>(userData);
+			}
+
+			var embedBuilder = new EmbedBuilder();
+			embedBuilder.WithColor((userData.IsOverdrawn() ? Color.Red : Color.Green));
+			embedBuilder.WithTitle($"{Context.User.GetFullUsername()}'s Latest Transactions");
+			foreach (var transaction in userData.TransactionLog)
+			{
+				embedBuilder.AddField($"[{transaction.TimeStamp}] **{transaction.TransactionInitiator}** {((transaction.Amount > 0) ? "gave" : "took")} ${transaction.Amount}.", $"{transaction.Comment}");
+			}
+			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transactions Request handled by Wokebucks");
+			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+
+			await ReplyAsync($"", false, embed: embedBuilder.Build());
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "transactions", Context.User.GetFullUsername());
 		}
 
 		private async Task<bool> ReactIfSelfWhereNotAllowedAsync(IApplication application, SocketUser target, SocketUserMessage userMessage)
