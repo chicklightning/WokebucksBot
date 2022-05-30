@@ -36,9 +36,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle("Leaderboard");
-			foreach (var leaderboardKeyValuePair in leaderboard.TopThreeWokest)
+			foreach (var leaderboardReference in leaderboard.MostWoke[Context.Guild.Id.ToString()])
 			{
-				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", "$" + string.Format("{0:0.00}", leaderboardKeyValuePair.Value));
+				embedBuilder.AddField($"{leaderboardReference.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Balance));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Leaderboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
@@ -66,10 +66,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle("Skeeterboard");
-
-			foreach (var leaderboardKeyValuePair in leaderboard.BottomThreeWokest)
+			foreach (var leaderboardReference in leaderboard.LeastWoke[Context.Guild.Id.ToString()])
 			{
-				if ()
+				embedBuilder.AddField($"{leaderboardReference.Username}", "$" + string.Format("{0:0.00}", leaderboardReference.Balance));
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Skeeterboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
