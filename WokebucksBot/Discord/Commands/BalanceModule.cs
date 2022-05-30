@@ -69,7 +69,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context, user, "takebuck", amount);
+			await CheckUserInteractionsAndUpdateBalances(Context, user, "takebuck", amount * -1);
 		}
 
 		[Command("balance")]
