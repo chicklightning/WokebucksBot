@@ -25,7 +25,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[Alias("give", "add")]
 		public async Task GiveWokebuckAsync(
 			[Summary("The amount of Wokebucks you want to add, between 1 and 10.")]
-			double amount,
+			double amount = 1,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
 		{
@@ -52,7 +52,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[Alias("take")]
 		public async Task TakeWokebuckAsync(
 			[Summary("The amount of Wokebucks you want to take, between 1 and 5.")]
-			double amount,
+			double amount = 1,
 			[Summary("The user whose balance you want to take Wokebucks from.")]
 			SocketUser? target = null)
 		{
