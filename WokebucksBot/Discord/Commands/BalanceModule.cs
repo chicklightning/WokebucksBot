@@ -22,19 +22,19 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[Command("givebucks")]
 		[Summary("Adds a specified amount of Wokebucks to another user's Wokebucks balance (allowed once per five minutes per unique user).")]
-		[Alias("give", "add")]
+		[Alias("give", "givebuck")]
 		public async Task GiveWokebuckAsync(
-			[Summary("The amount of Wokebucks you want to add, between 1 and 10.")]
+			[Summary("The amount of Wokebucks you want to add, between 1 and 10 (defaults to 1).")]
 			double amount = 1,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
 		{
-			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "givebuck", Context.User.GetFullUsername());
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
 
 			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
 			if (user is null)
             {
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "givebuck", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "givebucks", Context.User.GetFullUsername());
 				return;
             }
 
@@ -49,19 +49,19 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[Command("takebucks")]
 		[Summary("Takes a specified amount of Wokebucks from another user's Wokebucks balance (allowed once per five minutes per unique user).")]
-		[Alias("take")]
+		[Alias("take", "takebuck")]
 		public async Task TakeWokebuckAsync(
-			[Summary("The amount of Wokebucks you want to take, between 1 and 5.")]
+			[Summary("The amount of Wokebucks you want to take, between 1 and 5 (defaults to 1).")]
 			double amount = 1,
 			[Summary("The user whose balance you want to take Wokebucks from.")]
 			SocketUser? target = null)
 		{
-			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "takebuck", Context.User.GetFullUsername());
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "takebucks", Context.User.GetFullUsername());
 
 			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
 			if (user is null)
 			{
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "takebuck", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "takebucks", Context.User.GetFullUsername());
 				return;
 			}
 
@@ -71,7 +71,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(application, user, "takebuck", amount * -1);
+			await CheckUserInteractionsAndUpdateBalances(application, user, "takebucks", amount * -1);
 		}
 
 		[Command("balance")]
