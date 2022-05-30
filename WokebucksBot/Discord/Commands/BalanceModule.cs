@@ -38,12 +38,13 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
             }
 
-			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
+			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(user, "givebuck", amount);
+			await CheckUserInteractionsAndUpdateBalances(application, user, "givebuck", amount);
 		}
 
 		[Command("takebucks")]
