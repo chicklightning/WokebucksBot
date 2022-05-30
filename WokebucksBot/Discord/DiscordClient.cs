@@ -61,7 +61,7 @@ namespace Swamp.WokebucksBot.Discord
 		{
             // Don't process the command if it was a system message or if it was a duplicate command (they seem to get sent every time, not sure why)
             if (socketMessage is not SocketUserMessage message ||
-				(_lastCommand is not null && string.Equals(_lastCommand.CleanContent, socketMessage.CleanContent) && (socketMessage.Timestamp - _lastCommand.Timestamp).TotalSeconds < 60))
+				(_lastCommand is not null && string.Equals(_lastCommand.CleanContent, socketMessage.CleanContent) && (socketMessage.Timestamp - _lastCommand.Timestamp).TotalSeconds < 4))
             {
                 return;
             }
