@@ -43,7 +43,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context, user, "givebuck", amount);
+			await CheckUserInteractionsAndUpdateBalances(user, "givebuck", amount);
 		}
 
 		[Command("takebucks")]
@@ -64,12 +64,13 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			if (await ReactIfSelfWhereNotAllowedAsync(Context.User, user, Context.Message))
+			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
+			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context, user, "takebuck", amount * -1);
+			await CheckUserInteractionsAndUpdateBalances(application, user, "takebuck", amount * -1);
 		}
 
 		[Command("balance")]
@@ -98,9 +99,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
 		}
 
-		private async Task<bool> ReactIfSelfWhereNotAllowedAsync(SocketUser caller, SocketUser target, SocketUserMessage userMessage)
+		private async Task<bool> ReactIfSelfWhereNotAllowedAsync(IApplication application, SocketUser target, SocketUserMessage userMessage)
         {
-			if (string.Equals(caller.GetFullUsername(), target.GetFullUsername()))
+			if (Context.User.Id != application.Owner.Id && string.Equals(Context.User.GetFullUsername(), target.GetFullUsername()))
 			{
 				var embedBuilder = new EmbedBuilder();
 				embedBuilder.WithColor(Color.Red);
@@ -125,9 +126,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			return false;
 		}
 
-		private async Task CheckUserInteractionsAndUpdateBalances(SocketCommandContext context, SocketUser target, string commandName, double amount)
+		private async Task CheckUserInteractionsAndUpdateBalances(IApplication application, SocketUser target, string commandName, double amount)
         {
-			SocketUser caller = context.User;
+			SocketUser caller = Context.User;
 
 			// Check user's relationship to other user to make sure at least an hour has passed
 			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId());
@@ -148,8 +149,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 
 			// Bot owner can call commands unlimited times
-			IApplication application = await context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			double minutesSinceLastInteractionWithOtherUser = context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
+			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining
@@ -168,7 +168,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				// Let the bot owner do whatever amount, others can only subtract at most 5 or add at most 10
 				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
 
-				if (context.User.Id != application.Owner.Id && (amount > 10 || amount < -5))
+				if (Context.User.Id != application.Owner.Id && (amount > 10 || amount < -5))
                 {
 					// If amount needs to be within bounds for normal users
 					embedBuilder.WithColor(Color.Red);
