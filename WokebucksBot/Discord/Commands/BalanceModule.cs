@@ -241,6 +241,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithTitle("Bank Transaction");
 				embedBuilder.AddField($"{(commandName.Contains("take") ? "Victim" : "Recipient")}", $"{target.GetFullUsername()}", true);
 				embedBuilder.AddField("Updated Balance", "$" + string.Format("{0:0.00}", targetData.Balance), true);
+				embedBuilder.AddField("Reason", $"{reason}", true);
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
