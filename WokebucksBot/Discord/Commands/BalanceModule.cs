@@ -181,6 +181,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 					await ReplyAsync($"", false, embed: embedBuilder.Build());
 
 					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
+					return;
 				}
 
 				targetData.AddToBalance(amount);
