@@ -190,7 +190,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
-				Task updateCallerDataTask = _documentClient.UpsertDocumentAsync<UserData>(callerData);
+				Task updateCallerDataTask = !string.Equals(Context.User.GetFullUsername(), target.GetFullUsername()) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
 				Task updateLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
 
 				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);
