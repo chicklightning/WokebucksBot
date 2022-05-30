@@ -41,7 +41,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "givebuck");
+			await CheckUserInteractionsAndUpdateBalances(Context, user, "givebuck");
 		}
 
 		[Command("givebucks")]
@@ -65,7 +65,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "givebucks");
+			await CheckUserInteractionsAndUpdateBalances(Context, user, "givebucks");
 		}
 
 		[Command("takebuck")]
@@ -89,7 +89,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "takebuck");
+			await CheckUserInteractionsAndUpdateBalances(Context, user, "takebuck");
 		}
 
 		[RequireOwner]
@@ -114,7 +114,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
             }
 
-			await CheckUserInteractionsAndUpdateBalances(Context.User, user, "takebucks");
+			await CheckUserInteractionsAndUpdateBalances(Context, user, "takebucks");
 		}
 
 		[Command("balance")]
@@ -170,8 +170,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			return false;
 		}
 
-		private async Task CheckUserInteractionsAndUpdateBalances(SocketUser caller, SocketUser target, string commandName)
+		private async Task CheckUserInteractionsAndUpdateBalances(SocketCommandContext context, SocketUser target, string commandName)
         {
+			SocketUser caller = context.User;
+
 			// Check user's relationship to other user to make sure at least an hour has passed
 			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId());
 			Task<Leaderboard?> leaderboardFetchTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
@@ -188,7 +190,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				throw e;
 			}
 
-			double minutesSinceLastInteractionWithOtherUser = callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId());
+			// Bot owner can call commands unlimited times
+			IApplication application = await context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
+			double minutesSinceLastInteractionWithOtherUser = !(context.User.Id != application.Owner.Id) ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 60)
 			{
 				// If an hour has not passed, send message saying they have not waited an hour since their last Wokebuck gift, and that x minutes are remaining
