@@ -24,7 +24,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[Summary("Adds a specified amount of Wokebucks to another user's Wokebucks balance (allowed once per five minutes per unique user).")]
 		[Alias("give", "givebuck")]
 		public async Task GiveWokebuckAsync(
-			[Summary("The amount of Wokebucks you want to add, between 1 and 10 (defaults to 1).")]
+			[Summary("The amount of Wokebucks you want to add, between 0.01 and 10 (defaults to 1).")]
 			double amount = 1,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
@@ -32,13 +32,22 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "givebucks", Context.User.GetFullUsername());
 
 			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			var embedBuilder = new EmbedBuilder();
 			if (user is null)
             {
+				await RespondWithFormattedError(embedBuilder, $"You have to mention a user in order to add to their balance.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "givebucks", Context.User.GetFullUsername());
 				return;
             }
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
+			if (double.IsNaN(amount) || amount < 0.01 || (amount > 10 && application.Owner.Id != Context.User.Id))
+			{
+				await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and $10.00.");
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to assign an invalid value: <{amount}>.", "givebucks", Context.User.GetFullUsername());
+				return;
+			}
+
 			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
@@ -57,15 +66,25 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			SocketUser? target = null)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "takebucks", Context.User.GetFullUsername());
-
+			
 			SocketUser? user = target ?? Context.Message.MentionedUsers.FirstOrDefault();
+			var embedBuilder = new EmbedBuilder();
 			if (user is null)
 			{
+				await RespondWithFormattedError(embedBuilder, $"You have to mention a user in order to remove from their balance.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "takebucks", Context.User.GetFullUsername());
 				return;
 			}
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
+			if (double.IsNaN(amount) || amount < 0.01 || (amount > 5 && application.Owner.Id != Context.User.Id))
+			{
+				await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and $5.00.");
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to assign an invalid value: <{amount}>.", "takebucks", Context.User.GetFullUsername());
+				return;
+			}
+
+			
 			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
@@ -154,13 +173,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining
-				embedBuilder.WithColor(Color.Red);
-				embedBuilder.WithTitle("Invalid Bank Transaction");
-				embedBuilder.WithDescription($"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
-				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
-				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
-
-				await ReplyAsync($"", false, embed: embedBuilder.Build());
+				await RespondWithFormattedError(embedBuilder, $"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 
 				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
 			}
@@ -172,13 +185,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				if (Context.User.Id != application.Owner.Id && (amount > 10 || amount < -5))
                 {
 					// If amount needs to be within bounds for normal users
-					embedBuilder.WithColor(Color.Red);
-					embedBuilder.WithTitle("Invalid Bank Transaction");
-					embedBuilder.WithDescription($"Sorry, you have select a value larger than $-5.00 or smaller than $10.00.");
-					embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
-					embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
-
-					await ReplyAsync($"", false, embed: embedBuilder.Build());
+					await RespondWithFormattedError(embedBuilder, $"Sorry, you have select a value larger than $-5.00 or smaller than $10.00.");
 
 					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
 					return;
@@ -207,6 +214,17 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullDatabaseId(), targetData.ID);
 			}
+		}
+
+		private Task RespondWithFormattedError(EmbedBuilder builder, string message)
+        {
+			builder.WithColor(Color.Red);
+			builder.WithTitle("Invalid Bank Transaction");
+			builder.WithDescription(message);
+			builder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+
+			return ReplyAsync($"", false, embed: builder.Build());
 		}
 	}
 }
