@@ -10,10 +10,14 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "lastAccess", Required = Required.Always)]
         public IDictionary<string, DateTimeOffset> LastAccessTimes { get; set; }
 
+        [JsonProperty(PropertyName = "transLog", Required = Required.Always)]
+        public IList<Transaction> TransactionLog { get; set; }
+
         public UserData(string id) : base(id)
         {
             Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
+            TransactionLog = new List<Transaction>();
         }
 
         public void AddToBalance(double amount)
@@ -37,6 +41,16 @@ namespace Swamp.WokebucksBot.CosmosDB
         public void UpdateMostRecentInteractionForUser(string otherUserId)
         {
             LastAccessTimes[otherUserId] = DateTimeOffset.UtcNow;
+        }
+
+        public void AddTransaction(string username, string comment, double amount)
+        {
+            TransactionLog.Add(new Transaction(username, amount, comment));
+
+            if (TransactionLog.Count > 10)
+            {
+                TransactionLog = TransactionLog.OrderByDescending(x => x.TimeStamp).Take(10).ToList();
+            }
         }
 
         public bool IsOverdrawn() => Balance < 0;

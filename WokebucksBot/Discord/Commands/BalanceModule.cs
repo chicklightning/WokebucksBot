@@ -22,10 +22,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[Command("givebucks")]
 		[Summary("Adds a specified amount of Wokebucks to another user's Wokebucks balance (allowed once per five minutes per unique user).")]
-		[Alias("give", "givebuck")]
 		public async Task GiveWokebuckAsync(
-			[Summary("The amount of Wokebucks you want to add, between 0.01 and 10 (defaults to 1).")]
-			double amount = 1,
+			[Summary("The amount of Wokebucks you want to add, between 0.01 and 10.")]
+			double amount,
 			[Summary("The user whose balance you want to add Wokebucks to.")]
 			SocketUser? target = null)
 		{
@@ -53,15 +52,16 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(application, user, "givebuck", amount);
+			await CheckUserInteractionsAndUpdateBalances(application, user, reason, "givebuck", Math.Round(amount, 2));
 		}
 
 		[Command("takebucks")]
 		[Summary("Takes a specified amount of Wokebucks from another user's Wokebucks balance (allowed once per five minutes per unique user).")]
-		[Alias("take", "takebuck")]
 		public async Task TakeWokebuckAsync(
-			[Summary("The amount of Wokebucks you want to take, between 1 and 5 (defaults to 1).")]
-			double amount = 1,
+			[Summary("The amount of Wokebucks you want to take, between 1 and 5.")]
+			double amount,
+			[Summary("The reason you are taking their Wokebucks.")]
+			string reason,
 			[Summary("The user whose balance you want to take Wokebucks from.")]
 			SocketUser? target = null)
 		{
@@ -84,13 +84,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			
 			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
 			}
 
-			await CheckUserInteractionsAndUpdateBalances(application, user, "takebucks", amount * -1);
+			await CheckUserInteractionsAndUpdateBalances(application, user, reason, "takebucks", Math.Round(amount * -1, 2));
 		}
 
 		[Command("balance")]
@@ -146,7 +145,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			return false;
 		}
 
-		private async Task CheckUserInteractionsAndUpdateBalances(IApplication application, SocketUser target, string commandName, double amount)
+		private async Task CheckUserInteractionsAndUpdateBalances(IApplication application, SocketUser target, string reason, string commandName, double amount)
         {
 			SocketUser caller = Context.User;
 
@@ -172,7 +171,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
-				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining
+				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining (The Brad Clauses)
 				await RespondWithFormattedError(embedBuilder, $"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 
 				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
@@ -192,6 +191,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				}
 
 				targetData.AddToBalance(amount);
+				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
 				leaderboard.UpdateLeaderboard(target.GetFullUsername(), targetData.Balance);
