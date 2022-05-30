@@ -66,9 +66,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle("Skeeterboard");
+
 			foreach (var leaderboardKeyValuePair in leaderboard.BottomThreeWokest)
 			{
-				embedBuilder.AddField($"{leaderboardKeyValuePair.Key}", "$" + string.Format("{0:0.00}", leaderboardKeyValuePair.Value));
+				if ()
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Skeeterboard Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");

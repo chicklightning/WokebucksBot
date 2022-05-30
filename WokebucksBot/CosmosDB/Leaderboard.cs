@@ -1,37 +1,50 @@
-﻿using Newtonsoft.Json;
+﻿using Discord.Commands;
+using Newtonsoft.Json;
+using Swamp.WokebucksBot.Discord.Commands;
 
 namespace Swamp.WokebucksBot.CosmosDB
 {
     public class Leaderboard : IDocument
     {
         [JsonProperty(PropertyName = "ldrbrd", Required = Required.Always)]
-        public IDictionary<string, double> AllUsers { get; set; }
+        public IDictionary<string, LeaderboardReference> AllUsers { get; set; }
 
-        [JsonProperty(PropertyName = "topThree", Required = Required.Always)]
-        public IDictionary<string, double> TopThreeWokest { get; set; }
+        [JsonProperty(PropertyName = "most", Required = Required.Always)]
+        public IDictionary<string, IList<LeaderboardReference>> MostWoke { get; set; }
 
-        [JsonProperty(PropertyName = "sktrbrd", Required = Required.Always)]
-        public IDictionary<string, double> BottomThreeWokest { get; set; }
+        [JsonProperty(PropertyName = "least", Required = Required.Always)]
+        public IDictionary<string, IList<LeaderboardReference>> LeastWoke { get; set; }
 
         public Leaderboard() : base("leaderboard")
         {
-            AllUsers = new Dictionary<string, double>();
-            TopThreeWokest = new Dictionary<string, double>();
-            BottomThreeWokest = new Dictionary<string, double>();
+            AllUsers = new Dictionary<string, LeaderboardReference>();
+            MostWoke = new Dictionary<string, IList<LeaderboardReference>>();
+            LeastWoke = new Dictionary<string, IList<LeaderboardReference>>();
         }
 
-        public void UpdateLeaderboard(string username, double balance)
+        public void UpdateLeaderboard(SocketCommandContext context, double balance)
         {
-            AllUsers[username] = balance;
-            TopThreeWokest = AllUsers
-                             .OrderByDescending(x => x.Value)
-                             .Take(3)
-                             .ToDictionary(x => x.Key, x => x.Value);
+            // Add guild if not present and update balance
+            AllUsers[context.User.GetFullDatabaseId()].Balance = balance;
+            AllUsers[context.User.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
 
-            BottomThreeWokest = AllUsers
-                             .OrderBy(x => x.Value)
-                             .Take(3)
-                             .ToDictionary(x => x.Key, x => x.Value);
+            // Redo leaderboards for the guilds this user is in
+            foreach (string guild in AllUsers[context.User.GetFullDatabaseId()].Guilds)
+            {
+                MostWoke[guild] = AllUsers
+                                     .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
+                                     .OrderByDescending(userLeaderboardPair => userLeaderboardPair.Value.Balance)
+                                     .Take(3)
+                                     .Select(x => x.Value)
+                                     .ToList();
+
+                LeastWoke[guild] = AllUsers
+                                     .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
+                                     .OrderBy(userLeaderboardPair => userLeaderboardPair.Value.Balance)
+                                     .Take(3)
+                                     .Select(x => x.Value)
+                                     .ToList();
+            }
         }
     }
 }

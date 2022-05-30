@@ -14,10 +14,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		private readonly ILogger<BalanceModule> _logger;
 		private readonly CosmosDBClient _documentClient;
+		private readonly DiscordSocketClient _discordSocketClient;
 
-		public BalanceModule(ILogger<BalanceModule> logger, CosmosDBClient docClient)
+		public BalanceModule(ILogger<BalanceModule> logger, DiscordSocketClient discordSocketClient, CosmosDBClient docClient)
         {
 			_logger = logger;
+			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
         }
 
@@ -165,7 +167,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
-				var emote = Context.Guild.Emotes
+				var emote = _discordSocketClient.Guilds
+							.Where(x => x.Name == "The Swamp")
+							.SelectMany(x => x.Emotes)
 							.FirstOrDefault(x => x.Name.IndexOf(
 								"OofaDoofa", StringComparison.OrdinalIgnoreCase) != -1);
 				if (emote is not null)
@@ -228,7 +232,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
-				leaderboard.UpdateLeaderboard(target.GetFullUsername(), targetData.Balance);
+				leaderboard.UpdateLeaderboard(Context, targetData.Balance);
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
