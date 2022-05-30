@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using Discord.WebSocket;
 using Newtonsoft.Json;
 using Swamp.WokebucksBot.Discord.Commands;
 
@@ -22,14 +23,14 @@ namespace Swamp.WokebucksBot.CosmosDB
             LeastWoke = new Dictionary<string, IDictionary<string, LeaderboardReference>>();
         }
 
-        public void UpdateLeaderboard(SocketCommandContext context, double balance)
+        public void UpdateLeaderboard(SocketCommandContext context, SocketUser socketUser, double balance)
         {
             // Add guild if not present and update balance
-            AllUsers[context.User.GetFullDatabaseId()].Balance = balance;
-            AllUsers[context.User.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
+            AllUsers[socketUser.GetFullDatabaseId()].Balance = balance;
+            AllUsers[socketUser.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
 
             // Redo leaderboards for the guilds this user is in
-            foreach (string guild in AllUsers[context.User.GetFullDatabaseId()].Guilds)
+            foreach (string guild in AllUsers[socketUser.GetFullDatabaseId()].Guilds)
             {
                 MostWoke[guild] = AllUsers
                                      .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
