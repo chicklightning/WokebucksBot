@@ -34,7 +34,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
 			{
-				await RespondWithFormattedError(embedBuilder, $"You must provide a reason for the bet, since this will be the name of the bet.");
+				await FollowupWithFormattedError(embedBuilder, $"You must provide a reason for the bet, since this will be the name of the bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user did not provide a bet reason.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -42,7 +42,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			List<string> options = optionsString.Split(',').ToList();
 			if (options.Count() <= 1 || options.Count() > 6)
             {
-				await RespondWithFormattedError(embedBuilder, $"You have to provide at least two (and no more than six) options to start a bet.");
+				await FollowupWithFormattedError(embedBuilder, $"You have to provide at least two (and no more than six) options to start a bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user did not provide enough options for bet, or provided too many.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -57,7 +57,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 			catch (Exception e)
             {
-				await RespondWithFormattedError(embedBuilder, $"You have to provide text for all options.");
+				await FollowupWithFormattedError(embedBuilder, $"You have to provide text for all options.");
 				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user provided a null or empty option.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -89,7 +89,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
-			await RespondAsync("", embed: embedBuilder.Build(), components: builder.Build());
+			await FollowupAsync("", embed: embedBuilder.Build(), components: builder.Build());
 		}
 
 		[SlashCommand("endbet", "End a bet.")]
@@ -103,14 +103,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
 			{
-				await RespondWithFormattedError(embedBuilder, "You have to give the name of the bet (aka the betting reason).");
+				await FollowupWithFormattedError(embedBuilder, "You have to give the name of the bet (aka the betting reason).");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since bet name was empty or whitespace.", "endbet", Context.User.GetFullUsername());
 				return;
 			}
 
 			if (string.IsNullOrWhiteSpace(option))
 			{
-				await RespondWithFormattedError(embedBuilder, "You have to provide the name of the winning option.");
+				await FollowupWithFormattedError(embedBuilder, "You have to provide the name of the winning option.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> tsince winning option name was empty or whitespace.", "givebucks", Context.User.GetFullUsername());
 				return;
 			}
@@ -119,7 +119,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(Bet.CreateDeterministicGUIDFromReason(bettingReason));
 			if (bet is null)
             {
-				await RespondWithFormattedError(embedBuilder, "No bet with this reason exists (you may have misspelled something). This command is case-**insensitive**.");
+				await FollowupWithFormattedError(embedBuilder, "No bet with this reason exists (you may have misspelled something). This command is case-**insensitive**.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since no bet with given reason existed.", "endbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -127,14 +127,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
 			if (!string.Equals(bet.OwnerId, Context.User.GetFullDatabaseId()) || !string.Equals(Context.User.Id, application.Owner.Id))
             {
-				await RespondWithFormattedError(embedBuilder, "You must be the owner of this bet to end it.");
+				await FollowupWithFormattedError(embedBuilder, "You must be the owner of this bet to end it.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user does not own this bet.", "endbet", Context.User.GetFullUsername());
 				return;
 			}
 
 			if (!bet.OptionTotals.ContainsKey(option))
 			{
-				await RespondWithFormattedError(embedBuilder, "No option with this name exists for this bet.");
+				await FollowupWithFormattedError(embedBuilder, "No option with this name exists for this bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since no option with the given name exists for this bet.", "endbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -159,7 +159,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.AddField($"{winnerAndWinning.Key} won!", $"${winnerAndWinning.Value}");
             }
 
-			await RespondAsync("", embed: embedBuilder.Build());
+			await FollowupAsync("", embed: embedBuilder.Build());
 		}
 
 		[ComponentInteraction("*")]
@@ -348,6 +348,17 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			return RespondAsync($"", embed: builder.Build());
+		}
+
+		private Task FollowupWithFormattedError(EmbedBuilder builder, string message)
+		{
+			builder.WithColor(Color.Red);
+			builder.WithTitle("Invalid Bank Transaction");
+			builder.WithDescription(message);
+			builder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+
+			return FollowupAsync($"", embed: builder.Build());
 		}
 	}
 }
