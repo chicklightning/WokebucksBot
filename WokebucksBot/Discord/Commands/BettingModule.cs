@@ -20,15 +20,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
 
-			_discordSocketClient.SelectMenuExecuted += BetMenuHandler;
 			_discordSocketClient.ModalSubmitted += BetModalHandler;
 		}
 
-		[SlashCommand("bet", "Start a bet.")]
+		[SlashCommand("startbet", "Start a bet.")]
 		public async Task StartBetAsync(
-			[Summary("The reason you are starting the bet.")]
 			string bettingReason,
-            [Summary("The comma-separated options you want to provide.")]
 			string optionsString)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "startbet", Context.User.GetFullUsername());
@@ -77,7 +74,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			foreach (string option in bet.OptionTotals.Keys)
             {
 				// Display option, underlying value is combined bet ID and option ID
-				menuBuilder.AddOption(option, new Bet.BetOptionKey(bet.ID, option).FullKey);
+				menuBuilder.AddOption(option, option);
 				count++;
             }
 
@@ -96,9 +93,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[SlashCommand("endbet", "End a bet.")]
 		public async Task EndBetAsync(
-			[Summary("The reason you started the bet (this is the name of the bet you are ending).")]
 			string bettingReason,
-			[Summary("The winning option.")]
 			string option)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "endbet", Context.User.GetFullUsername());
@@ -165,11 +160,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			await ReplyAsync("", false, embed: embedBuilder.Build());
 		}
 
-		public async Task BetMenuHandler(SocketMessageComponent messageComponent)
+		[ComponentInteraction("*")]
+		public async Task BetMenuHandler(string id, string[] selectedRoles)
 		{
-			var betOptionKeyString = string.Join(", ", messageComponent.Data.Values);
-			var betOptionKey = new Bet.BetOptionKey(betOptionKeyString);
-			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(betOptionKey.BetId);
+			var option = string.Join(", ", selectedRoles);
+			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(id);
 
 			var embedBuilder = new EmbedBuilder();
 			if (bet is null)
@@ -181,6 +176,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			// Set up modal to let user add bet amount
+			var betOptionKey = new Bet.BetOptionKey(id, option);
 			var tb = new TextInputBuilder()
 							.WithLabel("Bet Amount")
 							.WithCustomId($"{betOptionKey.FullKey}")
