@@ -281,9 +281,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				if (userDatum is not null)
 				{
 					// Get that user's bet amount and remove it from their balance
-					double wagerAmount = -1.0 * bet.Wagers[userDatum.ID].Amount;
+					double wagerAmount = bet.Wagers[userDatum.ID].Amount;
 					userDatum.AddToBalance(wagerAmount);
-					userDatum.AddTransaction("Wokebucks Bet", "Entered a wager", wagerAmount);
+					userDatum.AddTransaction("Wokebucks Bet", "Entered a wager", -1.0 * wagerAmount);
 
 					// if that user bet on the winning option, divide the option winnings and add to their account
 					string optionName = bet.Wagers[userDatum.ID].Option;
