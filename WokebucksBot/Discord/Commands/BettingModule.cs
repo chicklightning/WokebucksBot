@@ -196,6 +196,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		public async Task BetModalHandler(SocketModal modal)
         {
+			await DeferAsync();
+
 			// Get the values of components
 			List<SocketMessageComponentData> components = modal.Data.Components.ToList();
 
@@ -209,7 +211,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (bet is null)
             {
 				// Bet is over, tell them they can no longer bet
-				await RespondWithFormattedError(embedBuilder, "This bet has ended.");
+				await FollowupWithFormattedError(embedBuilder, "This bet has ended.");
 				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetmodal", Context.User.GetFullUsername());
 				return;
 			}
@@ -218,7 +220,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (!Double.TryParse(betAmountString, out double betAmount) || Double.IsNaN(betAmount) || Double.IsInfinity(betAmount) || betAmount < 0.01 || betAmount > 20)
             {
 				// Invalid bet amount
-				await RespondWithFormattedError(embedBuilder, "Invalid bet amount, you must bet between $0.01 and $20.00.");
+				await FollowupWithFormattedError(embedBuilder, "Invalid bet amount, you must bet between $0.01 and $20.00.");
 				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since bet amount was invalid.", "addbetmodal", Context.User.GetFullUsername());
 				return;
 			}
@@ -227,7 +229,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (!bet.AddBet(betOptionKey.OptionId, modal.User.GetFullDatabaseId(), betAmount))
             {
 				// Invalid bet amount
-				await RespondWithFormattedError(embedBuilder, "You have already made a wager for this bet.");
+				await FollowupWithFormattedError(embedBuilder, "You have already made a wager for this bet.");
 				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since user has already bet.", "addbetmodal", Context.User.GetFullUsername());
 				return;
 			}
@@ -244,7 +246,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wager handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
-			await modal.RespondAsync("", embed: embedBuilder.Build());
+			await modal.FollowupAsync("", embed: embedBuilder.Build());
 		}
 
 		private async Task<IDictionary<string, double>> ReconcileBalancesAsync(Bet bet, string option)
