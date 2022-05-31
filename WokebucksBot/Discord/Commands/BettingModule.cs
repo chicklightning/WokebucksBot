@@ -29,6 +29,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			string optionsString)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "startbet", Context.User.GetFullUsername());
+			await DeferAsync(ephemeral: true);
 
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
@@ -88,7 +89,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
-			await ReplyAsync("", false, embed: embedBuilder.Build(), components: builder.Build());
+			await RespondAsync("", embed: embedBuilder.Build(), components: builder.Build());
 		}
 
 		[SlashCommand("endbet", "End a bet.")]
@@ -97,6 +98,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			string option)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "endbet", Context.User.GetFullUsername());
+			await DeferAsync(ephemeral: true);
 
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
@@ -138,7 +140,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			// Select the winning option and divvy out money to all users who bet
-			await ReplyAsync("Ending bet and reconciling balances...");
+			await RespondAsync("Ending bet and reconciling balances...");
 			IDictionary<string, double> winnersAndWinnings = await ReconcileBalancesAsync(bet, option);
 
 			// Delete bet from db
@@ -157,7 +159,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.AddField($"{winnerAndWinning.Key} won!", $"${winnerAndWinning.Value}");
             }
 
-			await ReplyAsync("", false, embed: embedBuilder.Build());
+			await RespondAsync("", embed: embedBuilder.Build());
 		}
 
 		[ComponentInteraction("*")]
@@ -345,7 +347,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			builder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
 			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
-			return ReplyAsync($"", false, embed: builder.Build());
+			return RespondAsync($"", embed: builder.Build());
 		}
 	}
 }
