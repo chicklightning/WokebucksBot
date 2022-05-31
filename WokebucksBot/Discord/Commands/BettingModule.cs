@@ -186,7 +186,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		public async Task BetModalHandler(SocketModal modal)
         {
-			modal.DeferAsync();
+			await modal.DeferAsync();
 
 			// Get the values of components
 			List<SocketMessageComponentData> components = modal.Data.Components.ToList();
