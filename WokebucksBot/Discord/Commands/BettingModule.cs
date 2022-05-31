@@ -239,7 +239,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			await modal.FollowupAsync("", embed: embedBuilder.Build());
 		}
 
-		private async Task<IDictionary<string, double>> ReconcileBalancesAsync(Bet bet, string option)
+		private async Task<IDictionary<string, double>> ReconcileBalancesAsync(Bet bet, string option, string guildId)
 		{
 			// Go through each option and get all the users who voted for that option and their individual wager amounts
 			var getUsersThatBet = new List<Task<UserData?>>();
@@ -263,6 +263,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
                 {
 					_logger.LogError(e, $"<{{{CommandName}}}> partially or fully failed to fetch all user documents.", "endbet");
 				}
+			}
+
+			// Get Leaderboard
+			Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+			if (leaderboard is null)
+            {
+				_logger.LogError($"<{{{CommandName}}}> failed to fetch leaderboard.", "endbet");
+				throw new NullReferenceException("Failed to fetch leaderboard.");
 			}
 
 			// Get total winnings:
@@ -303,12 +311,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				}
 			}
 
-			// Write the data back out to the user documents
+			// Write the data back out to the user documents and to leaderboard
 			var writeUsersThatBet = new List<Task>();
 			foreach (UserData userDatum in userData)
 			{
 				writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync<UserData>(userDatum));
+				leaderboard.UpdateLeaderboard(guildId, userDatum.ID, userDatum.Balance);
 			}
+			writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync(leaderboard));
 
 			try
 			{
@@ -318,11 +328,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			{
 				if (e is AggregateException)
 				{
-					_logger.LogError(e.InnerException, $"<{{{CommandName}}}> partially or fully failed to write all user documents.", "endbet");
+					_logger.LogError(e.InnerException, $"<{{{CommandName}}}> partially or fully failed to write all user or leaderboard documents.", "endbet");
 				}
 				else
 				{
-					_logger.LogError(e, $"<{{{CommandName}}}> partially or fully failed to write all user documents.", "endbet");
+					_logger.LogError(e, $"<{{{CommandName}}}> partially or fully failed to write all user or leaderboard documents.", "endbet");
 				}
 			}
 

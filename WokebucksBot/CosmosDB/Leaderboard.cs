@@ -23,27 +23,28 @@ namespace Swamp.WokebucksBot.CosmosDB
             LeastWoke = new Dictionary<string, IDictionary<string, LeaderboardReference>>();
         }
 
-        public void UpdateLeaderboard(SocketCommandContext context, SocketUser socketUser, double balance)
+        public void UpdateLeaderboard(string guildId, string userId, double balance)
         {
             // Add user to leaderboard if they aren't there already
-            if (!AllUsers.ContainsKey(socketUser.GetFullDatabaseId()))
+            string fullUsername = SocketUserExtensions.SwitchToUsername(userId);
+            if (!AllUsers.ContainsKey(userId))
             {
-                AllUsers[socketUser.GetFullDatabaseId()] = new LeaderboardReference()
+                AllUsers[fullUsername] = new LeaderboardReference()
                 {
                     Balance = balance,
-                    Guilds = new HashSet<string>() { context.Guild.Id.ToString() },
-                    Username = socketUser.GetFullUsername()
+                    Guilds = new HashSet<string>() { guildId },
+                    Username = fullUsername
                 };
             }
             else
             {
                 // Add guild if not present and update balance
-                AllUsers[socketUser.GetFullDatabaseId()].Balance = balance;
-                AllUsers[socketUser.GetFullDatabaseId()].Guilds.Add(context.Guild.Id.ToString());
+                AllUsers[userId].Balance = balance;
+                AllUsers[userId].Guilds.Add(guildId);
             }
 
             // Redo leaderboards for the guilds this user is in
-            foreach (string guild in AllUsers[socketUser.GetFullDatabaseId()].Guilds)
+            foreach (string guild in AllUsers[userId].Guilds)
             {
                 MostWoke[guild] = AllUsers
                                      .Where(userLeaderboardPair => userLeaderboardPair.Value.Guilds.Contains(guild))
