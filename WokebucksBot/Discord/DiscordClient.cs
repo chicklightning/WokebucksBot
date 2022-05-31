@@ -98,7 +98,10 @@ namespace Swamp.WokebucksBot.Discord
 
 		public async Task ClientReadyAsync()
 		{
-			_interactionService = new InteractionService(_discordSocketClient);
+			_interactionService = new InteractionService(_discordSocketClient, new InteractionServiceConfig()
+            {
+				UseCompiledLambda = true
+            });
 			await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 			await _interactionService.RegisterCommandsGloballyAsync();
 

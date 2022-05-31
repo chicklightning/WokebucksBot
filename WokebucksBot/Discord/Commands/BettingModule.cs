@@ -20,6 +20,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
 
+			_discordSocketClient.SelectMenuExecuted += BetMenuHandler;
 			_discordSocketClient.ModalSubmitted += BetModalHandler;
 		}
 
@@ -73,7 +74,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			foreach (string option in bet.OptionTotals.Keys)
             {
 				// Display option, underlying value is combined bet ID and option ID
-				menuBuilder.AddOption(option, option);
+				menuBuilder.AddOption(option, new Bet.BetOptionKey(bet.ID, option).FullKey);
 				count++;
             }
 
@@ -160,25 +161,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			await FollowupAsync("", embed: embedBuilder.Build());
 		}
 
-		[ComponentInteraction("*")]
-		public async Task BetMenuHandler(string id, string[] selectedRoles)
+		public async Task BetMenuHandler(SocketMessageComponent component)
 		{
-			await Context.Interaction.DeferAsync();
-
-			var option = string.Join(", ", selectedRoles);
-			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(id);
-
-			var embedBuilder = new EmbedBuilder();
-			if (bet is null)
-            {
-				// Bet is over, tell them they can no longer bet
-				await FollowupWithFormattedError(embedBuilder, "This bet has ended.");
-				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetoption", Context.User.GetFullUsername());
-				return;
-			}
+			var betOptionFullKey = string.Join(", ", component.Data.Values);
+			var betOptionKey = new Bet.BetOptionKey(betOptionFullKey);
 
 			// Set up modal to let user add bet amount
-			var betOptionKey = new Bet.BetOptionKey(id, option);
 			var tb = new TextInputBuilder()
 							.WithLabel("Bet Amount")
 							.WithCustomId($"{betOptionKey.FullKey}")
@@ -190,15 +178,15 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			var mb = new ModalBuilder()
 							.WithTitle("Bet Amount")
+							.WithCustomId($"{betOptionKey.FullKey}")
 							.AddTextInput(tb);
 
-
-			await Context.Interaction.RespondWithModalAsync(mb.Build());
+			await component.RespondWithModalAsync(mb.Build());
 		}
 
 		public async Task BetModalHandler(SocketModal modal)
         {
-			await DeferAsync();
+			modal.DeferAsync();
 
 			// Get the values of components
 			List<SocketMessageComponentData> components = modal.Data.Components.ToList();
@@ -214,7 +202,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
             {
 				// Bet is over, tell them they can no longer bet
 				await FollowupWithFormattedError(embedBuilder, "This bet has ended.");
-				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetmodal", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetmodal", modal.User.GetFullUsername());
 				return;
 			}
 
@@ -223,7 +211,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
             {
 				// Invalid bet amount
 				await FollowupWithFormattedError(embedBuilder, "Invalid bet amount, you must bet between $0.01 and $20.00.");
-				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since bet amount was invalid.", "addbetmodal", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since bet amount was invalid.", "addbetmodal", modal.User.GetFullUsername());
 				return;
 			}
 
@@ -232,7 +220,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
             {
 				// Invalid bet amount
 				await FollowupWithFormattedError(embedBuilder, "You have already made a wager for this bet.");
-				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since user has already bet.", "addbetmodal", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since user has already bet.", "addbetmodal", modal.User.GetFullUsername());
 				return;
 			}
 
@@ -242,10 +230,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithColor(Color.Blue);
 			embedBuilder.WithTitle($"Wager Entered");
 			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Wagered Made By", $"{Context.User.GetFullUsername()}");
+			embedBuilder.AddField("Wagered Made By", $"{modal.User.GetFullUsername()}");
 			embedBuilder.AddField("Option Selected", $"{betOptionKey.OptionId}");
 			embedBuilder.AddField("Bet Amount", "$" + string.Format("{0:0.00}", betAmount));
-			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Wager handled by Wokebucks");
+			embedBuilder.WithFooter($"{modal.User.GetFullUsername()}'s Wager handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			await modal.FollowupAsync("", embed: embedBuilder.Build());
