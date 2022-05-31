@@ -114,7 +114,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			else
 			{
 				embedBuilder.WithColor(Color.Red);
-				embedBuilder.WithTitle("You are **not woke**.");
+				embedBuilder.WithTitle("You are **broke**.");
 			}
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
