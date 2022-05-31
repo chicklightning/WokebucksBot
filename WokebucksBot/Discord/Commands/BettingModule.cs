@@ -29,7 +29,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			string optionsString)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "startbet", Context.User.GetFullUsername());
-			await DeferAsync(ephemeral: true);
+			await DeferAsync();
 
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
@@ -68,9 +68,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			// Return multiple options for user to select, along with bet amount
 			var menuBuilder = new SelectMenuBuilder()
 									.WithPlaceholder("Select an option to place your bet on.")
-									.WithCustomId(bet.ID)
-									.WithMinValues(2)
-									.WithMaxValues(6);
+									.WithCustomId(bet.ID);
 			int count = 1;
 			foreach (string option in bet.OptionTotals.Keys)
             {
@@ -98,7 +96,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			string option)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "endbet", Context.User.GetFullUsername());
-			await DeferAsync(ephemeral: true);
+			await DeferAsync();
 
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
