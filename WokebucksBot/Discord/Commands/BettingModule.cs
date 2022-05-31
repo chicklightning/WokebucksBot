@@ -139,7 +139,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			// Select the winning option and divvy out money to all users who bet
-			await RespondAsync("Ending bet and reconciling balances...");
+			await FollowupAsync("Ending bet and reconciling balances...");
 			IDictionary<string, double> winnersAndWinnings = await ReconcileBalancesAsync(bet, option);
 
 			// Delete bet from db
@@ -192,7 +192,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			List<SocketMessageComponentData> components = modal.Data.Components.ToList();
 
 			// Get bet option IDs and check if bet is still running
-			SocketMessageComponentData component = components.First(x => x.CustomId == "bet_amount");
+			SocketMessageComponentData component = components[0];
 			string betOptionString = component.CustomId;
 			var betOptionKey = new Bet.BetOptionKey(betOptionString);
 			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(betOptionKey.BetId);
@@ -312,7 +312,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			try
 			{
-				await Task.WhenAll(getUsersThatBet);
+				await Task.WhenAll(writeUsersThatBet);
 			}
 			catch (Exception e)
 			{
