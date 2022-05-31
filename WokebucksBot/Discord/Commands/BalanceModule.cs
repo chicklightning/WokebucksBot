@@ -234,7 +234,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
-				leaderboard.UpdateLeaderboard(Context, target, targetData.Balance);
+				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target.GetFullDatabaseId(), targetData.Balance);
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
