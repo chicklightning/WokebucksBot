@@ -103,6 +103,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
             {
 				embedBuilder.WithColor(Color.Green);
 				embedBuilder.WithTitle("You are **woke**.");
+
+				embedBuilder.WithImageUrl("https://c.tenor.com/qU7kKSP7JgsAAAAC/big-brain-lateralus.gif");
 			}
 			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.GetFullDatabaseId()))
             {
