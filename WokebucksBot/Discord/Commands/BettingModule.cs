@@ -26,8 +26,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[SlashCommand("startbet", "Start a bet.")]
 		public async Task StartBetAsync(
-			string bettingReason,
-			string optionsString)
+			[Summary(name: "reason", description: "Name of (reason for) the bet.")] string bettingReason,
+			[Summary(name: "options", description: "Comma-separated list of options.")] string optionsString)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "startbet", Context.User.GetFullUsername());
 			await DeferAsync();
@@ -93,8 +93,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		[SlashCommand("endbet", "End a bet.")]
 		public async Task EndBetAsync(
-			string bettingReason,
-			string option)
+            [Summary(name: "reason", description: "Name of (reason for) the bet.")] string bettingReason,
+			[Summary(name: "winningoption", description: "Name the option that won.")] string option)
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "endbet", Context.User.GetFullUsername());
 			await DeferAsync();
