@@ -291,7 +291,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
                     {
 						// Get percentage of option total they contributed
 						double percentage = Math.Round(wagerAmount / bet.OptionTotals[optionName].OptionTotal, 2);
-						double userWinnings = Math.Round(percentage * winnings, 2);
+						double userWinnings = Math.Round(percentage * winnings);
 
 						userDatum.AddToBalance(userWinnings);
 						userDatum.AddTransaction("Wokebucks Bet", "Won the bet", userWinnings);
