@@ -163,6 +163,8 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		[ComponentInteraction("*")]
 		public async Task BetMenuHandler(string id, string[] selectedRoles)
 		{
+			await Context.Interaction.DeferAsync();
+
 			var option = string.Join(", ", selectedRoles);
 			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(id);
 
@@ -170,7 +172,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			if (bet is null)
             {
 				// Bet is over, tell them they can no longer bet
-				await RespondWithFormattedError(embedBuilder, "This bet has ended.");
+				await FollowupWithFormattedError(embedBuilder, "This bet has ended.");
 				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetoption", Context.User.GetFullUsername());
 				return;
 			}
