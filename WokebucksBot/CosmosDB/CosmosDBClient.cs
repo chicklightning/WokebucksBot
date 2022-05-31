@@ -66,6 +66,19 @@ namespace Swamp.WokebucksBot.CosmosDB
             }
         }
 
+        public async Task DeleteDocumentAsync<T>(string id) where T : IDocument
+        {
+            try
+            {
+                await _container.DeleteItemAsync<T>(id, new PartitionKey(id));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Unable to delete document with ID <{{{DocumentIdKey}}}>.", id);
+                throw;
+            }
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

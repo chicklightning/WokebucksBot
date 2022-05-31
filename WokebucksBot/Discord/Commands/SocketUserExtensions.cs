@@ -13,5 +13,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
         {
             return $"{socketUser.Username}|{socketUser.Discriminator}";
         }
+
+        public static string SwitchToUsername(string fullDatabaseId)
+        {
+            return fullDatabaseId.Replace('|', '#');
+        }
     }
 }

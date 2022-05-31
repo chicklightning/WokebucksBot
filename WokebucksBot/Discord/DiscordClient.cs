@@ -1,6 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Interactions;
+using Discord.Net;
 using Discord.WebSocket;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -14,6 +17,7 @@ namespace Swamp.WokebucksBot.Discord
 		private readonly CommandService _commands;
 		private readonly DiscordSocketClient _discordSocketClient;
 		private readonly ILogger<DiscordClient> _logger;
+		private InteractionService _interactionService;
 		private bool _isInitialized = false;
 		private bool _disposed = false;
 
@@ -46,6 +50,8 @@ namespace Swamp.WokebucksBot.Discord
 				await _discordSocketClient.StartAsync();
 				stopwatch.Stop();
 				_logger.LogInformation($"Successfully started DiscordSocketClient | {{{ElapsedTimeKey}}} ms.", stopwatch.ElapsedMilliseconds);
+
+				_discordSocketClient.Ready += ClientReadyAsync;
 
 				// Pass the service provider to the second parameter of
 				// AddModulesAsync to inject dependencies to all modules 
@@ -88,6 +94,19 @@ namespace Swamp.WokebucksBot.Discord
 				context: context,
 				argPos: argPos,
 				services: _services);
+		}
+
+		public async Task ClientReadyAsync()
+		{
+			_interactionService = new InteractionService(_discordSocketClient);
+			await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+			await _interactionService.RegisterCommandsGloballyAsync();
+
+			_discordSocketClient.InteractionCreated += async interaction =>
+			{
+				var ctx = new SocketInteractionContext(_discordSocketClient, interaction);
+				await _interactionService.ExecuteCommandAsync(ctx, _services);
+			};
 		}
 
 		public void Dispose()
