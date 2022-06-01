@@ -131,7 +131,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				return;
 			}
 
-			if (!bet.OptionTotals.ContainsKey(option.ToLower().Trim()))
+			if (!bet.OptionTotals.ContainsKey(option.Trim()))
 			{
 				await FollowupWithFormattedError(Context.User, embedBuilder, "No option with this name exists for this bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since no option with the given name exists for this bet.", "endbet", Context.User.GetFullUsername());
