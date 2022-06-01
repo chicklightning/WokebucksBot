@@ -113,7 +113,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			if (userData is null)
 			{
-				userData = new UserData(Context.User.GetFullDatabaseId());
+				userData = new UserData(Context.User.GetFullUsername());
 				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 

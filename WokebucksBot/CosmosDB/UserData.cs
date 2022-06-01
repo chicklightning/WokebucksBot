@@ -16,12 +16,11 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "transLog", Required = Required.Always)]
         public IList<Transaction> TransactionLog { get; set; }
 
-        public UserData(string id, string username) : base(id)
+        public UserData(string id) : base(id)
         {
             Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
             TransactionLog = new List<Transaction>();
-            Username = username;
         }
 
         public void AddToBalance(double amount)
