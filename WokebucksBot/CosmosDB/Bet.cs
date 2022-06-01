@@ -19,11 +19,11 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "options", Required = Required.Always)]
         public IDictionary<string, BetOption> OptionTotals { get; private set; }
 
-        public Bet(string reason, string ownerId) : base(CreateDeterministicGUIDFromReason(reason.Trim().ToLowerInvariant()))
+        public Bet(string reason, string ownerId) : base(CreateDeterministicGUIDFromReason(reason.Trim()))
         {
             Wagers = new Dictionary<string, Wager>();
             OptionTotals = new Dictionary<string, BetOption>();
-            Reason = reason.Trim().ToLowerInvariant();
+            Reason = reason.Trim();
             OwnerId = ownerId;
         }
 
@@ -36,7 +36,7 @@ namespace Swamp.WokebucksBot.CosmosDB
                     throw new ArgumentNullException("Cannot provide an empty option.");
                 }
 
-                var reducedOption = option.Length > 200 ? option.Substring(0, 200).Trim().ToLowerInvariant() : option.Trim().ToLowerInvariant();
+                var reducedOption = option.Length > 200 ? option.Substring(0, 200).Trim() : option.Trim();
                 var betOption = new BetOption()
                 {
                     OptionId = reducedOption,
@@ -69,7 +69,7 @@ namespace Swamp.WokebucksBot.CosmosDB
 
         public static string CreateDeterministicGUIDFromReason(string reason)
         {
-            var guid = new Guid(System.Security.Cryptography.SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(reason.ToLowerInvariant())).Take(16).ToArray());
+            var guid = new Guid(System.Security.Cryptography.SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(reason)).Take(16).ToArray());
             return guid.ToString();
         }
 
