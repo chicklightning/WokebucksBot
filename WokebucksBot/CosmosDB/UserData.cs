@@ -4,9 +4,6 @@ namespace Swamp.WokebucksBot.CosmosDB
 {
     public class UserData : IDocument
     {
-        [JsonProperty(PropertyName = "username", Required = Required.Always)]
-        public string Username { get; set; }
-
         [JsonProperty(PropertyName = "balance", Required = Required.Always)]
         public double Balance { get; set; }
 
