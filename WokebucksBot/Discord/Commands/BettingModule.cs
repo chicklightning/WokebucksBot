@@ -229,7 +229,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithColor(Color.Blue);
 			embedBuilder.WithTitle($"Wager Entered");
 			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Wagered Made By", $"{modal.User.GetFullUsername()}");
+			embedBuilder.AddField("Wager Made By", $"{modal.User.GetFullUsername()}");
 			embedBuilder.AddField("Option Selected", $"{betOptionKey.OptionId}");
 			embedBuilder.AddField("Bet Amount", "$" + string.Format("{0:0.00}", betAmount));
 			embedBuilder.WithFooter($"{modal.User.GetFullUsername()}'s Wager handled by Wokebucks");
