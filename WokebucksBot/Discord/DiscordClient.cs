@@ -1,9 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.Interactions;
-using Discord.Net;
 using Discord.WebSocket;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 

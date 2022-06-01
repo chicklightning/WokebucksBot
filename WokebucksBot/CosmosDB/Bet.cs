@@ -19,14 +19,11 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "options", Required = Required.Always)]
         public IDictionary<string, BetOption> OptionTotals { get; private set; }
 
-        private ProfanityFilter.ProfanityFilter _profanityFilter;
-
-        public Bet(string reason, string ownerId) : base(CreateDeterministicGUIDFromReason(reason.ToLowerInvariant()))
+        public Bet(string reason, string ownerId) : base(CreateDeterministicGUIDFromReason(reason.Trim().ToLowerInvariant()))
         {
             Wagers = new Dictionary<string, Wager>();
             OptionTotals = new Dictionary<string, BetOption>();
-            _profanityFilter = new ProfanityFilter.ProfanityFilter();
-            Reason = _profanityFilter.CensorString(reason.ToLowerInvariant());
+            Reason = reason.Trim().ToLowerInvariant();
             OwnerId = ownerId;
         }
 
@@ -39,15 +36,14 @@ namespace Swamp.WokebucksBot.CosmosDB
                     throw new ArgumentNullException("Cannot provide an empty option.");
                 }
 
-                var reducedOption = option.Length > 200 ? option.Substring(0, 200) : option;
-                string censoredOption = _profanityFilter.CensorString(reducedOption);
+                var reducedOption = option.Length > 200 ? option.Substring(0, 200).Trim().ToLowerInvariant() : option.Trim().ToLowerInvariant();
                 var betOption = new BetOption()
                 {
-                    OptionId = censoredOption,
+                    OptionId = reducedOption,
                     OptionTotal = 0,
                     Voters = new HashSet<string>()
                 };
-                OptionTotals.Add(censoredOption, betOption);
+                OptionTotals.Add(reducedOption, betOption);
             }
         }
 

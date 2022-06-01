@@ -124,14 +124,14 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			if (!string.Equals(bet.OwnerId, Context.User.GetFullDatabaseId()) || !string.Equals(Context.User.Id, application.Owner.Id))
+			if (!string.Equals(bet.OwnerId, Context.User.GetFullDatabaseId()) && !string.Equals(Context.User.Id, application.Owner.Id))
             {
 				await FollowupWithFormattedError(Context.User, embedBuilder, "You must be the owner of this bet to end it.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user does not own this bet.", "endbet", Context.User.GetFullUsername());
 				return;
 			}
 
-			if (!bet.OptionTotals.ContainsKey(option))
+			if (!bet.OptionTotals.ContainsKey(option.ToLower().Trim()))
 			{
 				await FollowupWithFormattedError(Context.User, embedBuilder, "No option with this name exists for this bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since no option with the given name exists for this bet.", "endbet", Context.User.GetFullUsername());
