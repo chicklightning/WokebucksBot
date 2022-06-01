@@ -139,7 +139,6 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			// Select the winning option and divvy out money to all users who bet
-			await FollowupAsync("Ending bet and reconciling balances...");
 			IDictionary<string, double> winnersAndWinnings = await ReconcileBalancesAsync(bet, option, Context.Guild.Id.ToString());
 
 			// Delete bet from db
