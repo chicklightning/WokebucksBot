@@ -153,6 +153,14 @@ namespace Swamp.WokebucksBot.Discord
 
 				await Task.WhenAll(fetchLotteries.Values);
 
+				Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+				if (leaderboard is null)
+				{
+					var e = new InvalidOperationException("Could not find leaderboard.");
+					_logger.LogError(e, "Could not find leaderboard.");
+					throw e;
+				}
+
 				IDictionary<string, Lottery?> guildsToLotteries = new Dictionary<string, Lottery?>();
 				foreach (KeyValuePair<string, Task<Lottery?>> fetchLotteryTaskWithGuildId in fetchLotteries)
                 {
@@ -186,6 +194,8 @@ namespace Swamp.WokebucksBot.Discord
 						userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
 						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
 
+						leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
+
 						guildToLottery.Value.ResetLottery();
 						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(guildToLottery.Value));
 
@@ -215,7 +225,13 @@ namespace Swamp.WokebucksBot.Discord
 			{
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
 
-				Lottery? lottery = await _documentClient.GetDocumentAsync<Lottery>($"{component.Data.CustomId}");
+				Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+				Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(component.Data.CustomId);
+				Task<UserData?> fetchUser = _documentClient.GetDocumentAsync<UserData>($"{component.User.Id}");
+
+				await Task.WhenAll(fetchLeaderboard, fetchLottery, fetchUser);
+
+				Lottery? lottery = await fetchLottery;
 				if (lottery is null)
 				{
 					var e = new InvalidOperationException("Could not find lottery.");
@@ -223,7 +239,15 @@ namespace Swamp.WokebucksBot.Discord
 					throw e;
 				}
 
-				UserData userData = await _documentClient.GetDocumentAsync<UserData>($"{component.User.Id}") ?? new UserData(component.User);
+				Leaderboard? leaderboard = await fetchLeaderboard;
+				if (leaderboard is null)
+				{
+					var e = new InvalidOperationException("Could not find leaderboard.");
+					_logger.LogError(e, "Could not find leaderboard.");
+					throw e;
+				}
+
+				UserData userData = await fetchUser ?? new UserData(component.User);
 				userData.AddToBalance(-1);
 				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -1);
 
@@ -231,8 +255,9 @@ namespace Swamp.WokebucksBot.Discord
 
 				Task writeLottery = _documentClient.UpsertDocumentAsync<Lottery>(lottery);
 				Task writeUser = _documentClient.UpsertDocumentAsync<UserData>(userData);
+				Task writeLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
 
-				await Task.WhenAll(writeLottery, writeUser);
+				await Task.WhenAll(writeLottery, writeUser, writeLeaderboard);
 
 				var embedBuilder = new EmbedBuilder()
 										.WithColor(Color.Gold)
