@@ -17,16 +17,30 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "owner", Required = Required.Always)]
         public string OwnerId { get; private set; }
 
+        [JsonProperty(PropertyName = "ownerUs", Required = Required.Always)]
+        public string OwnerUsername { get; private set; }
+
         // string key is the option name
         [JsonProperty(PropertyName = "options", Required = Required.Always)]
         public IDictionary<string, BetOption> OptionTotals { get; private set; }
 
-        public Bet(string reason, string ownerId) : base(CreateDeterministicGUIDFromReason(reason.Trim()))
+        public Bet(string reason, SocketUser creator) : base(CreateDeterministicGUIDFromReason(reason.Trim()))
         {
             Wagers = new Dictionary<string, Wager>();
             OptionTotals = new Dictionary<string, BetOption>();
             Reason = reason.Trim();
-            OwnerId = ownerId;
+            OwnerId = creator.Id.ToString();
+            OwnerUsername = creator.GetFullUsername();
+        }
+
+        [JsonConstructor]
+        private Bet()
+        {
+            Wagers = new Dictionary<string, Wager>();
+            OptionTotals = new Dictionary<string, BetOption>();
+            Reason = string.Empty;
+            OwnerId = string.Empty;
+            OwnerUsername = string.Empty;
         }
 
         public void AddOptions(IEnumerable<string> options)

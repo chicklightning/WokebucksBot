@@ -145,7 +145,6 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle($"Ending Bet");
 			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Started By", $"{SocketUserExtensions.SwitchToUsername(bet.OwnerId)}");
 			embedBuilder.WithFooter($"{SocketUserExtensions.SwitchToUsername(bet.OwnerId)}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 			embedBuilder.WithCurrentTimestamp();
