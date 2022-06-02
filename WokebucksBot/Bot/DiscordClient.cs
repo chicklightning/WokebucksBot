@@ -139,81 +139,85 @@ namespace Swamp.WokebucksBot.Bot
 
 		public async Task OnCommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, Discord.Commands.IResult result)
         {
-			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.Id);
+			// At midnight UTC, run lotteries
+			if (DateTimeOffset.UtcNow.Hour == 0)
+            {
+				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.Id);
 
-			// Get lotteries from all guilds the bot is in
-			IDictionary<string, Task<Lottery?>> fetchLotteries = new Dictionary<string, Task<Lottery?>>();
-			IDictionary<string, SocketGuild> socketGuilds = new Dictionary<string, SocketGuild>();
-			foreach (SocketGuild guild in _discordSocketClient.Guilds)
-			{
-				socketGuilds[guild.Id.ToString()] = guild;
-				fetchLotteries.Add(guild.Id.ToString(), _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString())));
-			}
-
-			await Task.WhenAll(fetchLotteries.Values);
-
-			Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
-			if (leaderboard is null)
-			{
-				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, "Could not find leaderboard.");
-				throw e;
-			}
-
-			IDictionary<string, Lottery?> guildsToLotteries = new Dictionary<string, Lottery?>();
-			foreach (KeyValuePair<string, Task<Lottery?>> fetchLotteryTaskWithGuildId in fetchLotteries)
-			{
-				Lottery? lottery = await fetchLotteryTaskWithGuildId.Value;
-
-				// If a lottery is null, add it anyway; we'll want to create a lottery for this guild
-				guildsToLotteries.Add(fetchLotteryTaskWithGuildId.Key, lottery);
-			}
-
-			IDictionary<string, UserData> winners = new Dictionary<string, UserData>(); // Key is user ID, UserData is value
-			IList<Task> writesLotteriesAndUsers = new List<Task>();
-			foreach (KeyValuePair<string, Lottery?> guildToLottery in guildsToLotteries)
-			{
-				// All guilds should have lotteries, otherwise don't worry about it it'll get taken care of when the bot joins a guild
-				if (guildToLottery.Value is not null)
+				// Get lotteries from all guilds the bot is in
+				IDictionary<string, Task<Lottery?>> fetchLotteries = new Dictionary<string, Task<Lottery?>>();
+				IDictionary<string, SocketGuild> socketGuilds = new Dictionary<string, SocketGuild>();
+				foreach (SocketGuild guild in _discordSocketClient.Guilds)
 				{
-					string winnerId = guildToLottery.Value.GetWeightedRandomTotals();
-
-					// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
-					UserData userData;
-					if (!winners.ContainsKey(winnerId))
-					{
-						userData = await _documentClient.GetDocumentAsync<UserData>($"{winnerId}") ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
-					}
-					else
-					{
-						userData = winners[winnerId];
-					}
-
-					userData.AddToBalance(guildToLottery.Value.JackpotAmount);
-					userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
-					writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
-
-					var embedBuilder = new EmbedBuilder()
-											.WithColor(Color.Gold)
-											.WithTitle("Lottery Results")
-											.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
-											.AddField("Winner", $"{userData.Username}")
-											.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
-											.WithUrl("https://github.com/chicklightning/WokebucksBot")
-											.WithCurrentTimestamp();
-
-					await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
-
-					leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
-
-					guildToLottery.Value.ResetLottery();
-					writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(guildToLottery.Value));
+					socketGuilds[guild.Id.ToString()] = guild;
+					fetchLotteries.Add(guild.Id.ToString(), _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString())));
 				}
+
+				await Task.WhenAll(fetchLotteries.Values);
+
+				Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+				if (leaderboard is null)
+				{
+					var e = new InvalidOperationException("Could not find leaderboard.");
+					_logger.LogError(e, "Could not find leaderboard.");
+					throw e;
+				}
+
+				IDictionary<string, Lottery?> guildsToLotteries = new Dictionary<string, Lottery?>();
+				foreach (KeyValuePair<string, Task<Lottery?>> fetchLotteryTaskWithGuildId in fetchLotteries)
+				{
+					Lottery? lottery = await fetchLotteryTaskWithGuildId.Value;
+
+					// If a lottery is null, add it anyway; we'll want to create a lottery for this guild
+					guildsToLotteries.Add(fetchLotteryTaskWithGuildId.Key, lottery);
+				}
+
+				IDictionary<string, UserData> winners = new Dictionary<string, UserData>(); // Key is user ID, UserData is value
+				IList<Task> writesLotteriesAndUsers = new List<Task>();
+				foreach (KeyValuePair<string, Lottery?> guildToLottery in guildsToLotteries)
+				{
+					// All guilds should have lotteries, otherwise don't worry about it it'll get taken care of when the bot joins a guild
+					if (guildToLottery.Value is not null)
+					{
+						string winnerId = guildToLottery.Value.GetWeightedRandomTotals();
+
+						// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
+						UserData userData;
+						if (!winners.ContainsKey(winnerId))
+						{
+							userData = await _documentClient.GetDocumentAsync<UserData>($"{winnerId}") ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
+						}
+						else
+						{
+							userData = winners[winnerId];
+						}
+
+						userData.AddToBalance(guildToLottery.Value.JackpotAmount);
+						userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
+						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
+
+						var embedBuilder = new EmbedBuilder()
+												.WithColor(Color.Gold)
+												.WithTitle("Lottery Results")
+												.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
+												.AddField("Winner", $"{userData.Username}")
+												.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
+												.WithUrl("https://github.com/chicklightning/WokebucksBot")
+												.WithCurrentTimestamp();
+
+						await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
+
+						leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
+
+						guildToLottery.Value.ResetLottery();
+						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(guildToLottery.Value));
+					}
+				}
+
+				await Task.WhenAll(writesLotteriesAndUsers);
+
+				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.GetFullUsername());
 			}
-
-			await Task.WhenAll(writesLotteriesAndUsers);
-
-			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.GetFullUsername());
 		}
 
 		public async Task HandleButtonAsync(SocketMessageComponent component)
