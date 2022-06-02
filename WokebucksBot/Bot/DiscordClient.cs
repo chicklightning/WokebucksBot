@@ -202,7 +202,7 @@ namespace Swamp.WokebucksBot.Bot
 											.WithUrl("https://github.com/chicklightning/WokebucksBot")
 											.WithCurrentTimestamp();
 
-					await context.Channel.SendMessageAsync("", embed: embedBuilder.Build());
+					await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
 
 					leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
 
