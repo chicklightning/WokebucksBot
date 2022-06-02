@@ -248,7 +248,7 @@ namespace Swamp.WokebucksBot.Discord
 				}
 
 				UserData userData = await fetchUser ?? new UserData(component.User);
-				userData.AddToBalance(-1);
+				userData.UpdateUsernameAndBalance(-1, component.User.GetFullUsername());
 				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -1);
 
 				lottery.AddTicketPurchase(component.User.Id.ToString());
@@ -347,7 +347,7 @@ namespace Swamp.WokebucksBot.Discord
             {
 				userData = new UserData(modal.User);
             }
-			userData.AddToBalance(-1 * betAmount);
+			userData.UpdateUsernameAndBalance(-1 * betAmount, modal.User.GetFullUsername());
 			userData.AddTransaction("Wokebucks Bet", $"Entered a wager: {bet.Reason}", -1.0 * betAmount);
 
 			Leaderboard? leaderboard = await leaderboardTask;

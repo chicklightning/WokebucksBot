@@ -233,7 +233,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				}
 
 				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.Id.ToString()) ?? new UserData(target);
-				targetData.AddToBalance(amount);
+				targetData.UpdateUsernameAndBalance(amount, target.GetFullUsername());
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
