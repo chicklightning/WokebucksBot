@@ -231,7 +231,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			foreach (UserData? userDatum in userData)
 			{
 				writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync<UserData>(userDatum));
-				leaderboard.ReconcileLeaderboardAfterBet(userDatum.ID, userDatum.Balance, guildId);
+				leaderboard.ReconcileLeaderboard(userDatum.ID, userDatum.Balance, guildId);
 			}
 			writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync(leaderboard));
 

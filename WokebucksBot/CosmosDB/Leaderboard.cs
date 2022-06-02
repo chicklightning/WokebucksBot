@@ -59,7 +59,7 @@ namespace Swamp.WokebucksBot.CosmosDB
             }
         }
 
-        public void ReconcileLeaderboardAfterBet(string userId, double balance, string guildId)
+        public void ReconcileLeaderboard(string userId, double balance, string guildId)
         {
             if (!AllUsers.ContainsKey(userId))
             {
