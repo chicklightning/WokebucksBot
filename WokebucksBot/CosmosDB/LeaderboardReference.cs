@@ -7,6 +7,9 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "user", Required = Required.Always)]
         public string Username { get; set; }
 
+        [JsonProperty(PropertyName = "userId", Required = Required.Always)]
+        public string UserId { get; set; }
+
         [JsonProperty(PropertyName = "guilds", Required = Required.Always)]
         public HashSet<string> Guilds { get; set; } = new HashSet<string>();
 
@@ -15,7 +18,7 @@ namespace Swamp.WokebucksBot.CosmosDB
 
         public bool Equals(LeaderboardReference? other)
         {
-            return (string.Equals(Username, other?.Username));
+            return string.Equals(UserId, other?.UserId);
         }
 
         public override bool Equals(object? obj)
@@ -25,7 +28,7 @@ namespace Swamp.WokebucksBot.CosmosDB
 
         public override int GetHashCode()
         {
-            return Username.GetHashCode();
+            return UserId.GetHashCode();
         }
     }
 }

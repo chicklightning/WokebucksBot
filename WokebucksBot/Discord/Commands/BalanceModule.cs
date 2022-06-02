@@ -20,7 +20,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_logger = logger;
 			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
-        }
+		}
 
 		[Command("givebucks")]
 		[Summary("Adds a specified amount of Wokebucks to another user's Wokebucks balance (allowed once per five minutes per unique user).")]
@@ -109,11 +109,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
 
-			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
 
 			if (userData is null)
 			{
-				userData = new UserData(Context.User.GetFullUsername());
+				userData = new UserData(Context.User);
 				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 
@@ -122,6 +122,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("$" + string.Format("{0:0.00}", userData.Balance));
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Balance provided by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -134,11 +135,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "transactions", Context.User.GetFullUsername());
 
-			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
 
 			if (userData is null)
 			{
-				userData = new UserData(Context.User.GetFullDatabaseId());
+				userData = new UserData(Context.User);
 				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 
@@ -151,6 +152,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transactions Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -167,6 +169,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithDescription("You can't change your own Wokebucks ~~dumbass~~.");
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+				embedBuilder.WithCurrentTimestamp();
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -191,12 +194,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			SocketUser caller = Context.User;
 
 			// Check user's relationship to other user to make sure at least an hour has passed
-			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId());
+			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.Id.ToString());
 			Task<Leaderboard?> leaderboardFetchTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
 
 			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask);
 
-			UserData callerData = await callerDataFetchTask ?? new UserData(caller.GetFullDatabaseId());
+			UserData callerData = await callerDataFetchTask ?? new UserData(caller);
 			Leaderboard? leaderboard = await leaderboardFetchTask;
 
 			if (leaderboard is null)
@@ -229,12 +232,12 @@ namespace Swamp.WokebucksBot.Discord.Commands
 					return;
 				}
 
-				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
+				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.Id.ToString()) ?? new UserData(target);
 				targetData.AddToBalance(amount);
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
-				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target.GetFullDatabaseId(), targetData.Balance);
+				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
 				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
@@ -250,6 +253,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.AddField("Reason", $"{reason}", true);
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+				embedBuilder.WithCurrentTimestamp();
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -263,6 +267,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			builder.WithTitle("Invalid Bank Transaction");
 			builder.WithDescription(message);
 			builder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+			builder.WithCurrentTimestamp();
 			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			return ReplyAsync($"", false, embed: builder.Build());

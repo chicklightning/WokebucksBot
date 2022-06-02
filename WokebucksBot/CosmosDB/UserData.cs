@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Discord.WebSocket;
+using Newtonsoft.Json;
+using Swamp.WokebucksBot.Discord.Commands;
 
 namespace Swamp.WokebucksBot.CosmosDB
 {
@@ -13,11 +15,15 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "transLog", Required = Required.Always)]
         public IList<Transaction> TransactionLog { get; set; }
 
-        public UserData(string id) : base(id)
+        [JsonProperty(PropertyName = "username", Required = Required.Always)]
+        public string Username { get; set; }
+
+        public UserData(SocketUser user) : base(user.Id.ToString())
         {
             Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
             TransactionLog = new List<Transaction>();
+            Username = user.GetFullUsername();
         }
 
         public void AddToBalance(double amount)
