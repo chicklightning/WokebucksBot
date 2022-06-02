@@ -26,14 +26,13 @@ namespace Swamp.WokebucksBot.CosmosDB
         public void UpdateLeaderboard(string guildId, string userId, double balance)
         {
             // Add user to leaderboard if they aren't there already
-            string fullUsername = SocketUserExtensions.SwitchToUsername(userId);
             if (!AllUsers.ContainsKey(userId))
             {
-                AllUsers[fullUsername] = new LeaderboardReference()
+                AllUsers[userId] = new LeaderboardReference()
                 {
                     Balance = balance,
                     Guilds = new HashSet<string>() { guildId },
-                    Username = fullUsername
+                    Username = SocketUserExtensions.SwitchToUsername(userId)
                 };
             }
             else
