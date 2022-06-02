@@ -213,7 +213,7 @@ namespace Swamp.WokebucksBot.Bot
 
 			await Task.WhenAll(writesLotteriesAndUsers);
 
-			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User..GetFullUsername());
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.GetFullUsername());
 		}
 
 		public async Task HandleButtonAsync(SocketMessageComponent component)

@@ -46,7 +46,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
 			// Create a bet using reason and option strings
 			var reducedReason = bettingReason.Length > 200 ? bettingReason.Substring(0, 200) : bettingReason;
-			var bet = new Bet(reducedReason, Context.User.GetFullDatabaseId());
+			var bet = new Bet(reducedReason, Context.User);
 			
 			try
             {
@@ -145,7 +145,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle($"Ending Bet");
 			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.WithFooter($"{SocketUserExtensions.SwitchToUsername(bet.OwnerId)}'s Bet handled by Wokebucks");
+			embedBuilder.WithFooter($"{bet.OwnerUsername}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 			embedBuilder.WithCurrentTimestamp();
 
