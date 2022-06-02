@@ -1,6 +1,4 @@
-﻿using Discord.Commands;
-using Discord.WebSocket;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Swamp.WokebucksBot.Discord.Commands;
 
 namespace Swamp.WokebucksBot.CosmosDB
