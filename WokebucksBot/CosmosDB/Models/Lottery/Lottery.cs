@@ -11,7 +11,7 @@ namespace Swamp.WokebucksBot.CosmosDB
         public IDictionary<string, int> TicketsPurchased { get; set; } = new Dictionary<string, int>();
 
         [JsonProperty(PropertyName = "jackpot", Required = Required.Always)]
-        public uint JackpotAmount { get; set; } = 5;
+        public double JackpotAmount { get; set; } = 5;
 
         [JsonProperty(PropertyName = "ttlTickets", Required = Required.Always)]
         public int TotalTicketsPurchased { get; set; } = 0;

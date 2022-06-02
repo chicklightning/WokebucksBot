@@ -312,15 +312,42 @@ namespace Swamp.WokebucksBot.Bot
 			SocketMessageComponentData component = components[0];
 			string betOptionString = component.CustomId;
 			var betOptionKey = new Bet.BetOptionKey(betOptionString);
-			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(betOptionKey.BetId);
+			
+			Task<Bet?> betFetchTask = _documentClient.GetDocumentAsync<Bet>(betOptionKey.BetId);
+			Task<Lottery?> lotteryFetchTask = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(betOptionKey.GuildId));
+
+			// Check if user exists, if not, create them and add them to the leaderboard
+			Task<UserData?> userDataTask = _documentClient.GetDocumentAsync<UserData>(modal.User.Id.ToString());
+
+			// Update the leaderboard and add to the lottery:
+			Task<Leaderboard?> leaderboardTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+
+			await Task.WhenAll(betFetchTask, lotteryFetchTask, userDataTask, leaderboardTask);
 
 			var embedBuilder = new EmbedBuilder();
+			Bet? bet = await betFetchTask;
 			if (bet is null)
 			{
 				// Bet is over, tell them they can no longer bet
 				await modal.FollowUpWithErrorAsync(embedBuilder, modal.User, "This bet has ended.");
 				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetmodal", modal.User.GetFullUsername());
 				return;
+			}
+
+			Lottery? lottery = await lotteryFetchTask;
+			if (lottery is null)
+			{
+				var e = new InvalidOperationException("Could not find lottery.");
+				_logger.LogError(e, "Could not find lottery.");
+				throw e;
+			}
+
+			Leaderboard? leaderboard = await leaderboardTask;
+			if (leaderboard is null)
+			{
+				var e = new InvalidOperationException("Could not find leaderboard.");
+				_logger.LogError(e, "Could not find leaderboard.");
+				throw e;
 			}
 
 			string betAmountString = component.Value;
@@ -341,13 +368,6 @@ namespace Swamp.WokebucksBot.Bot
 				return;
 			}
 
-			// Check if user exists, if not, create them and add them to the leaderboard
-			Task<UserData?> userDataTask = _documentClient.GetDocumentAsync<UserData>(modal.User.Id.ToString());
-
-			Task<Leaderboard?> leaderboardTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
-
-			await Task.WhenAll(userDataTask, leaderboardTask);
-
 			UserData? userData = await userDataTask;
 			if (userData is null)
             {
@@ -356,21 +376,16 @@ namespace Swamp.WokebucksBot.Bot
 			userData.UpdateUsernameAndBalance(-1 * betAmount, modal.User.GetFullUsername());
 			userData.AddTransaction("Wokebucks Bet", $"Entered a wager: {bet.Reason}", -1.0 * betAmount);
 
-			Leaderboard? leaderboard = await leaderboardTask;
-			if (leaderboard is null)
-			{
-				var e = new InvalidOperationException("Could not find leaderboard.");
-				_logger.LogError(e, "Could not find leaderboard.");
-				throw e;
-			}
-
 			leaderboard.UpdateLeaderboard(betOptionKey.GuildId, modal.User, userData.Balance);
+
+			lottery.JackpotAmount += 0.5;
 
 			Task writeBet = _documentClient.UpsertDocumentAsync<Bet>(bet);
 			Task writeLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
 			Task writeUserData = _documentClient.UpsertDocumentAsync<UserData>(userData);
+			Task writeLottery = _documentClient.UpsertDocumentAsync<Lottery>(lottery);
 
-			await Task.WhenAll(writeBet, writeLeaderboard, writeUserData);
+			await Task.WhenAll(writeBet, writeLeaderboard, writeUserData, writeLottery);
 
 			// Respond to the modal.
 			embedBuilder.WithColor(Color.Blue);

@@ -197,16 +197,25 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			// Check user's relationship to other user to make sure at least an hour has passed
 			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.Id.ToString());
 			Task<Leaderboard?> leaderboardFetchTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+			Task<Lottery?> fetchLotteryTask = _documentClient.GetDocumentAsync<Lottery>($"{Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString())}");
 
-			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask);
+			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask, fetchLotteryTask);
 
 			UserData callerData = await callerDataFetchTask ?? new UserData(caller);
 			Leaderboard? leaderboard = await leaderboardFetchTask;
+			Lottery? lottery = await fetchLotteryTask;
 
 			if (leaderboard is null)
 			{
 				var e = new InvalidOperationException("Could not find leaderboard.");
 				_logger.LogError(e, "Could not find leaderboard.");
+				throw e;
+			}
+
+			if (lottery is null)
+			{
+				var e = new InvalidOperationException("Could not find lottery.");
+				_logger.LogError(e, "Could not find lottery.");
 				throw e;
 			}
 
@@ -240,12 +249,16 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				// Update leaderboard
 				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
+				// Add 0.5 to lottery pool:
+				lottery.JackpotAmount += 0.5;
+
 				callerData.UpdateMostRecentInteractionForUser(target.Id.ToString());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
 				Task updateCallerDataTask = !string.Equals(Context.User.Id, target.Id) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
 				Task updateLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
+				Task updateLottery = _documentClient.UpsertDocumentAsync<Lottery>(lottery);
 
-				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);
+				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard, updateLottery);
 
 				embedBuilder.WithColor((targetData.IsOverdrawn() ? Color.Red : Color.Green));
 				embedBuilder.WithTitle("Bank Transaction");
