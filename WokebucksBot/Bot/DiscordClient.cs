@@ -193,21 +193,21 @@ namespace Swamp.WokebucksBot.Bot
 					userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
 					writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
 
+					var embedBuilder = new EmbedBuilder()
+											.WithColor(Color.Gold)
+											.WithTitle("Lottery Results")
+											.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
+											.AddField("Winner", $"{userData.Username}")
+											.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
+											.WithUrl("https://github.com/chicklightning/WokebucksBot")
+											.WithCurrentTimestamp();
+
+					await context.Channel.SendMessageAsync("", embed: embedBuilder.Build());
+
 					leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
 
 					guildToLottery.Value.ResetLottery();
 					writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(guildToLottery.Value));
-
-					var embedBuilder = new EmbedBuilder()
-									.WithColor(Color.Gold)
-									.WithTitle("Lottery Results")
-									.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
-									.AddField("Winner", $"{userData.Username}")
-									.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
-									.WithUrl("https://github.com/chicklightning/WokebucksBot")
-									.WithCurrentTimestamp();
-
-					await context.Channel.SendMessageAsync("", embed: embedBuilder.Build());
 				}
 			}
 
