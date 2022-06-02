@@ -2,8 +2,9 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class BettingModule : InteractionModuleBase<SocketInteractionContext>
 	{

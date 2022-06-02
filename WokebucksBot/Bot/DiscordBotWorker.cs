@@ -1,4 +1,4 @@
-namespace Swamp.WokebucksBot.Discord
+namespace Swamp.WokebucksBot.Bot
 {
     public class DiscordBotWorker : BackgroundService
     {

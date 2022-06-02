@@ -1,8 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class LeaderboardModule : ModuleBase<SocketCommandContext>
 	{

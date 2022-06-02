@@ -2,8 +2,9 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class BalanceModule : ModuleBase<SocketCommandContext>
     {
@@ -212,7 +213,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var embedBuilder = new EmbedBuilder();
 
 			// Bot owner can call commands unlimited times
-			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
+			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.Id.ToString()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining (The Brad Clauses)
@@ -239,9 +240,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				// Update leaderboard
 				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
-				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
+				callerData.UpdateMostRecentInteractionForUser(target.Id.ToString());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
-				Task updateCallerDataTask = !string.Equals(Context.User.GetFullUsername(), target.GetFullUsername()) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
+				Task updateCallerDataTask = !string.Equals(Context.User.Id, target.Id) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
 				Task updateLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
 
 				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);

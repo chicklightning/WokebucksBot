@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.Extensions
 {
     public static class SocketModalExtensions
     {

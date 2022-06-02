@@ -1,7 +1,7 @@
 ﻿using Discord.WebSocket;
 using Newtonsoft.Json;
-using Swamp.WokebucksBot.Discord.Commands;
 using System.Text;
+using Swamp.WokebucksBot.Bot.Extensions;
 
 namespace Swamp.WokebucksBot.CosmosDB
 {

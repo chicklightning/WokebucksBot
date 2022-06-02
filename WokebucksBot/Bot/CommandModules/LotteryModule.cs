@@ -1,8 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class LotteryModule : ModuleBase<SocketCommandContext>
     {
@@ -35,6 +36,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			var ticketEmoji = new Emoji("\uD83C\uDFAB");
 			var buttonBuilder = new ButtonBuilder()
 										.WithEmote(ticketEmoji)
+										.WithLabel("Buy a ticket")
 										.WithCustomId($"{Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString())}")
 										.WithStyle(ButtonStyle.Primary);
 			var componentBuilder = new ComponentBuilder()
