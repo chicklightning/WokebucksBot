@@ -251,6 +251,8 @@ namespace Swamp.WokebucksBot.Discord
 				userData.UpdateUsernameAndBalance(-1, component.User.GetFullUsername());
 				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -1);
 
+				leaderboard.UpdateLeaderboard(Lottery.GetGuildIdFromLotteryId(component.Data.CustomId), component.User, userData.Balance);
+
 				lottery.AddTicketPurchase(component.User.Id.ToString());
 
 				Task writeLottery = _documentClient.UpsertDocumentAsync<Lottery>(lottery);

@@ -26,6 +26,15 @@ namespace Swamp.WokebucksBot.CosmosDB
             Username = user.GetFullUsername();
         }
 
+        [JsonConstructor]
+        private UserData()
+        {
+            Balance = 0;
+            LastAccessTimes = new Dictionary<string, DateTimeOffset>();
+            TransactionLog = new List<Transaction>();
+            Username = string.Empty;
+        }
+
         public void UpdateUsernameAndBalance(double amount, string username)
         {
             Balance += amount;

@@ -5,7 +5,7 @@ namespace Swamp.WokebucksBot.CosmosDB
     public class Lottery : IDocument
     {
         [JsonProperty(PropertyName = "guildId", Required = Required.Always)]
-        public string GuildId { get; set; }
+        public string GuildId { get; private set; }
 
         [JsonProperty(PropertyName = "rec", Required = Required.Always)]
         public IDictionary<string, int> TicketsPurchased { get; set; } = new Dictionary<string, int>();
@@ -26,6 +26,12 @@ namespace Swamp.WokebucksBot.CosmosDB
         public Lottery(string guildId) : base(FormatLotteryIdFromGuildId(guildId))
         {
             GuildId = guildId;
+        }
+
+        [JsonConstructor]
+        private Lottery()
+        {
+            GuildId = string.Empty;
         }
 
         public void AddTicketPurchase(string userId)
