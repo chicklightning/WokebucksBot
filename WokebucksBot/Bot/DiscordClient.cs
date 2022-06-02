@@ -250,8 +250,8 @@ namespace Swamp.WokebucksBot.Bot
 				}
 
 				UserData userData = await fetchUser ?? new UserData(component.User);
-				userData.UpdateUsernameAndBalance(-1, component.User.GetFullUsername());
-				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -1);
+				userData.UpdateUsernameAndBalance(-2, component.User.GetFullUsername());
+				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -2);
 
 				leaderboard.UpdateLeaderboard(Lottery.GetGuildIdFromLotteryId(component.Data.CustomId), component.User, userData.Balance);
 

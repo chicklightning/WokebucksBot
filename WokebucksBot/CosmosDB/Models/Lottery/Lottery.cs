@@ -46,7 +46,7 @@ namespace Swamp.WokebucksBot.CosmosDB
             }
 
             TotalTicketsPurchased += 1;
-            JackpotAmount += 1;
+            JackpotAmount += 2;
         }
 
         public string GetWeightedRandomTotals()
