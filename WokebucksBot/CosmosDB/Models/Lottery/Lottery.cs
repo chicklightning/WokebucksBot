@@ -16,6 +16,9 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "ttlTickets", Required = Required.Always)]
         public int TotalTicketsPurchased { get; set; } = 0;
 
+        [JsonProperty(PropertyName = "start", Required = Required.Always)]
+        public DateTimeOffset LotteryStart { get; set; } = DateTimeOffset.UtcNow;
+
         private static Random _random = new Random();
         private const string _lotteryIdFormat = "lottery|{0}";
 
@@ -26,12 +29,14 @@ namespace Swamp.WokebucksBot.CosmosDB
         public Lottery(string guildId) : base(FormatLotteryIdFromGuildId(guildId))
         {
             GuildId = guildId;
+            LotteryStart = DateTimeOffset.UtcNow;
         }
 
         [JsonConstructor]
         private Lottery()
         {
             GuildId = string.Empty;
+            LotteryStart = DateTimeOffset.UtcNow;
         }
 
         public void AddTicketPurchase(string userId)
@@ -69,13 +74,6 @@ namespace Swamp.WokebucksBot.CosmosDB
 
             // A winner has been chosen!
             return selectedUser.Key;
-        }
-
-        public void ResetLottery()
-        {
-            JackpotAmount = 5;
-            TotalTicketsPurchased = 0;
-            TicketsPurchased = new Dictionary<string, int>();
         }
     }
 }

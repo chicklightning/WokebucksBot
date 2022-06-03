@@ -176,41 +176,47 @@ namespace Swamp.WokebucksBot.Bot
 				IList<Task> writesLotteriesAndUsers = new List<Task>();
 				foreach (KeyValuePair<string, Lottery?> guildToLottery in guildsToLotteries)
 				{
-					// All guilds should have lotteries, otherwise don't worry about it it'll get taken care of when the bot joins a guild
 					if (guildToLottery.Value is not null)
 					{
-						string winnerId = guildToLottery.Value.GetWeightedRandomTotals();
+						if (guildToLottery.Value.LotteryStart.AddDays(1) >= DateTimeOffset.UtcNow)
+                        {
+							string winnerId = guildToLottery.Value.GetWeightedRandomTotals();
 
-						// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
-						UserData userData;
-						if (!winners.ContainsKey(winnerId))
-						{
-							userData = await _documentClient.GetDocumentAsync<UserData>($"{winnerId}") ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
+							// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
+							UserData userData;
+							if (!winners.ContainsKey(winnerId))
+							{
+								userData = await _documentClient.GetDocumentAsync<UserData>($"{winnerId}") ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
+								winners.Add(winnerId, userData);
+							}
+							else
+							{
+								userData = winners[winnerId];
+							}
+
+							userData.AddToBalance(guildToLottery.Value.JackpotAmount);
+							userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
+							writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
+
+							var embedBuilder = new EmbedBuilder()
+													.WithColor(Color.Gold)
+													.WithTitle("Lottery Results")
+													.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
+													.AddField("Winner", $"{userData.Username}")
+													.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
+													.WithUrl("https://github.com/chicklightning/WokebucksBot")
+													.WithCurrentTimestamp();
+
+							await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
+
+							leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
+
+							writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(Lottery.FormatLotteryIdFromGuildId(guildToLottery.Key))));
 						}
-						else
-						{
-							userData = winners[winnerId];
-						}
-
-						userData.AddToBalance(guildToLottery.Value.JackpotAmount);
-						userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
-						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
-
-						var embedBuilder = new EmbedBuilder()
-												.WithColor(Color.Gold)
-												.WithTitle("Lottery Results")
-												.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
-												.AddField("Winner", $"{userData.Username}")
-												.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
-												.WithUrl("https://github.com/chicklightning/WokebucksBot")
-												.WithCurrentTimestamp();
-
-						await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
-
-						leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
-
-						guildToLottery.Value.ResetLottery();
-						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(guildToLottery.Value));
+					}
+					else
+					{
+						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(Lottery.FormatLotteryIdFromGuildId(guildToLottery.Key))));
 					}
 				}
 
