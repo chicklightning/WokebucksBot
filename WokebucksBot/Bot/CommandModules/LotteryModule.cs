@@ -20,7 +20,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 		}
 
 		[Command("lottery")]
-		[Summary("Provides a button to buy lottery tickets for $1 each and the total jackpot amount")]
+		[Summary("Provides a button to buy lottery tickets for $2 each and the total jackpot amount")]
 		public async Task PurchaseLotteryTicketAsync()
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "lottery", Context.User.GetFullUsername());
@@ -45,7 +45,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			var embedBuilder = new EmbedBuilder()
 										.WithColor(Color.Blue)
 										.WithTitle("Buy a Lottery Ticket")
-										.WithDescription("Lottery tickets cost $1 each.")
+										.WithDescription("Lottery tickets cost $2 each.")
 										.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", lottery.JackpotAmount))
 										.WithFooter($"{Context.User.GetFullUsername()}'s Lottery Ticket Purchase Request handled by Wokebucks")
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")

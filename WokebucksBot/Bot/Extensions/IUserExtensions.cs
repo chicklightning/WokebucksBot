@@ -9,10 +9,5 @@ namespace Swamp.WokebucksBot.Bot.Extensions
         {
             return $"{socketUser.Username}#{socketUser.Discriminator}";
         }
-
-        public static string GetFullDatabaseId(this IUser socketUser)
-        {
-            return $"{socketUser.Username}|{socketUser.Discriminator}";
-        }
     }
 }

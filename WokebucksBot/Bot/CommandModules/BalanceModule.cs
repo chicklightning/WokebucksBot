@@ -228,7 +228,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining (The Brad Clauses)
 				await RespondWithFormattedError(embedBuilder, $"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 
-				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
+				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullUsername(), target.GetFullUsername());
 			}
 			else // minutesSinceLastInteractionWithOtherUser >= 5
 			{
@@ -238,7 +238,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 					// If amount needs to be within bounds for normal users
 					await RespondWithFormattedError(embedBuilder, $"Sorry, you have select a value larger than $-5.00 or smaller than $10.00.");
 
-					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
+					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullUsername(), target.GetFullUsername());
 					return;
 				}
 
@@ -271,7 +271,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
-				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullDatabaseId(), targetData.ID);
+				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullUsername(), targetData.ID);
 			}
 		}
 

@@ -100,14 +100,14 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			string guildId = Context.Guild.Id.ToString();
-			if (leaderboard.MostWoke.ContainsKey(guildId) && leaderboard.MostWoke[guildId].ContainsKey(Context.User.GetFullDatabaseId()))
+			if (leaderboard.MostWoke.ContainsKey(guildId) && leaderboard.MostWoke[guildId].ContainsKey(Context.User.Id.ToString()))
             {
 				embedBuilder.WithColor(Color.Green);
 				embedBuilder.WithTitle("You are **woke**.");
 
 				embedBuilder.WithImageUrl("https://c.tenor.com/qU7kKSP7JgsAAAAC/big-brain-lateralus.gif");
 			}
-			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.GetFullDatabaseId()))
+			else if (leaderboard.LeastWoke.ContainsKey(guildId) && leaderboard.LeastWoke[guildId].ContainsKey(Context.User.Id.ToString()))
             {
 				embedBuilder.WithColor(Color.DarkRed);
 				embedBuilder.WithTitle("You are **problematic**.");

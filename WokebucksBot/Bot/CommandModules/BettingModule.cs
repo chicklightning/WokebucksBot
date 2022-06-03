@@ -121,7 +121,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			}
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			if (!string.Equals(bet.OwnerId, Context.User.GetFullDatabaseId()) && !string.Equals(Context.User.Id, application.Owner.Id))
+			if (!string.Equals(bet.OwnerId, Context.User.Id.ToString()) && !string.Equals(Context.User.Id, application.Owner.Id))
             {
 				await FollowupWithFormattedError(Context.User, embedBuilder, "You must be the owner of this bet to end it.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user does not own this bet.", "endbet", Context.User.GetFullUsername());
