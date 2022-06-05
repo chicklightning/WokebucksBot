@@ -139,21 +139,20 @@ namespace Swamp.WokebucksBot.Bot
 
 		public async Task OnCommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, Discord.Commands.IResult result)
         {
-			// At midnight UTC, run lotteries
-			if (DateTimeOffset.UtcNow.Hour == 0)
-            {
+			// Get lotteries from all guilds the bot is in
+			Lottery? lottery = await _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(context.Guild.Id.ToString()));
+			if (lottery is null)
+			{
+				_logger.LogInformation($"Could not find lottery for guild with ID <{context.Guild.Id.ToString()}>, creating new lottery.");
+				await _documentClient.UpsertDocumentAsync<Lottery>(new Lottery(context.Guild.Id.ToString()));
+				return;
+			}
+
+			if (lottery.LotteryStart.AddDays(1) <= DateTimeOffset.UtcNow)
+			{
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.Id);
 
-				// Get lotteries from all guilds the bot is in
-				IDictionary<string, Task<Lottery?>> fetchLotteries = new Dictionary<string, Task<Lottery?>>();
-				IDictionary<string, SocketGuild> socketGuilds = new Dictionary<string, SocketGuild>();
-				foreach (SocketGuild guild in _discordSocketClient.Guilds)
-				{
-					socketGuilds[guild.Id.ToString()] = guild;
-					fetchLotteries.Add(guild.Id.ToString(), _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString())));
-				}
-
-				await Task.WhenAll(fetchLotteries.Values);
+				var writesToLotteriesAndUsers = new List<Task>();
 
 				Leaderboard? leaderboard = await _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
 				if (leaderboard is null)
@@ -163,64 +162,31 @@ namespace Swamp.WokebucksBot.Bot
 					throw e;
 				}
 
-				IDictionary<string, Lottery?> guildsToLotteries = new Dictionary<string, Lottery?>();
-				foreach (KeyValuePair<string, Task<Lottery?>> fetchLotteryTaskWithGuildId in fetchLotteries)
-				{
-					Lottery? lottery = await fetchLotteryTaskWithGuildId.Value;
+				string winnerId = lottery.GetWeightedRandomTotals();
 
-					// If a lottery is null, add it anyway; we'll want to create a lottery for this guild
-					guildsToLotteries.Add(fetchLotteryTaskWithGuildId.Key, lottery);
-				}
+				// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
+				UserData winner = await _documentClient.GetDocumentAsync<UserData>(winnerId) ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
 
-				IDictionary<string, UserData> winners = new Dictionary<string, UserData>(); // Key is user ID, UserData is value
-				IList<Task> writesLotteriesAndUsers = new List<Task>();
-				foreach (KeyValuePair<string, Lottery?> guildToLottery in guildsToLotteries)
-				{
-					if (guildToLottery.Value is not null)
-					{
-						if (guildToLottery.Value.LotteryStart.AddDays(1) >= DateTimeOffset.UtcNow)
-                        {
-							string winnerId = guildToLottery.Value.GetWeightedRandomTotals();
+				winner.AddToBalance(lottery.JackpotAmount);
+				winner.AddTransaction("Wokebucks Lottery", "Won the lottery!", lottery.JackpotAmount);
+				writesToLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(winner));
 
-							// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
-							UserData userData;
-							if (!winners.ContainsKey(winnerId))
-							{
-								userData = await _documentClient.GetDocumentAsync<UserData>($"{winnerId}") ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");
-								winners.Add(winnerId, userData);
-							}
-							else
-							{
-								userData = winners[winnerId];
-							}
+				leaderboard.ReconcileLeaderboard(winner.ID, winner.Balance, context.Guild.Id.ToString());
 
-							userData.AddToBalance(guildToLottery.Value.JackpotAmount);
-							userData.AddTransaction("Wokebucks Lottery", "Won the lottery!", guildToLottery.Value.JackpotAmount);
-							writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
+				writesToLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(context.Guild.Id.ToString())));
 
-							var embedBuilder = new EmbedBuilder()
-													.WithColor(Color.Gold)
-													.WithTitle("Lottery Results")
-													.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", guildToLottery.Value.JackpotAmount))
-													.AddField("Winner", $"{userData.Username}")
-													.WithFooter($"{socketGuilds[guildToLottery.Key].Name}'s Lottery handled by Wokebucks")
-													.WithUrl("https://github.com/chicklightning/WokebucksBot")
-													.WithCurrentTimestamp();
+				var embedBuilder = new EmbedBuilder()
+										.WithColor(Color.Gold)
+										.WithTitle("Lottery Results")
+										.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", lottery.JackpotAmount))
+										.AddField("Winner", $"{winner.Username}")
+										.WithFooter($"{context.Guild.Name}'s Lottery handled by Wokebucks")
+										.WithUrl("https://github.com/chicklightning/WokebucksBot")
+										.WithCurrentTimestamp();
 
-							await socketGuilds[guildToLottery.Key].DefaultChannel.SendMessageAsync("", embed: embedBuilder.Build());
+				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", embed: embedBuilder.Build()));
 
-							leaderboard.ReconcileLeaderboard(userData.ID, userData.Balance, guildToLottery.Key);
-
-							writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(Lottery.FormatLotteryIdFromGuildId(guildToLottery.Key))));
-						}
-					}
-					else
-					{
-						writesLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(Lottery.FormatLotteryIdFromGuildId(guildToLottery.Key))));
-					}
-				}
-
-				await Task.WhenAll(writesLotteriesAndUsers);
+				await Task.WhenAll(writesToLotteriesAndUsers);
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "resolveLottery", context.User.GetFullUsername());
 			}
