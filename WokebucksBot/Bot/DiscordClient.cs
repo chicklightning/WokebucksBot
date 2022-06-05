@@ -143,7 +143,7 @@ namespace Swamp.WokebucksBot.Bot
 			Lottery? lottery = await _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(context.Guild.Id.ToString()));
 			if (lottery is null)
 			{
-				_logger.LogInformation($"Could not find lottery for guild with ID <{context.Guild.Id.ToString()}>, creating new lottery.");
+				_logger.LogInformation($"Could not find lottery for guild with ID <{context.Guild.Id}>, creating new lottery.");
 				await _documentClient.UpsertDocumentAsync<Lottery>(new Lottery(context.Guild.Id.ToString()));
 				return;
 			}
