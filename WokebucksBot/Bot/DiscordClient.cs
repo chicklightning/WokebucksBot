@@ -197,6 +197,7 @@ namespace Swamp.WokebucksBot.Bot
 			// We can now check for our custom id
 			if (component.Data.CustomId.Contains("lottery"))
 			{
+				await component.DeferAsync();
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
 
 				Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
@@ -221,7 +222,15 @@ namespace Swamp.WokebucksBot.Bot
 					throw e;
 				}
 
+				var embedBuilder = new EmbedBuilder();
 				UserData userData = await fetchUser ?? new UserData(component.User);
+				if (userData.Balance < -100)
+                {
+					await component.FollowupWithErrorAsync(embedBuilder, component.User, $"You cannot buy tickets if you have less than $-100.00.");
+					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have too low of a balance.", "lotteryticket", component.User.GetFullUsername());
+					return;
+				}
+
 				userData.UpdateUsernameAndBalance(-2, component.User.GetFullUsername());
 				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -2);
 
@@ -235,16 +244,16 @@ namespace Swamp.WokebucksBot.Bot
 
 				await Task.WhenAll(writeLottery, writeUser, writeLeaderboard);
 
-				var embedBuilder = new EmbedBuilder()
-										.WithColor(Color.Gold)
-										.WithTitle("You Purchased a Lottery Ticket")
-										.WithDescription($"You have bought {lottery.TicketsPurchased[component.User.Id.ToString()]} tickets.")
-										.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", lottery.JackpotAmount))
-										.WithFooter($"{component.User.GetFullUsername()}'s Lottery Ticket Purchase handled by Wokebucks")
-										.WithUrl("https://github.com/chicklightning/WokebucksBot")
-										.WithCurrentTimestamp();
+				
+				embedBuilder.WithColor(Color.Blue)
+							.WithTitle("You Purchased a Lottery Ticket")
+							.WithDescription($"You have bought {lottery.TicketsPurchased[component.User.Id.ToString()]} tickets.")
+							.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", lottery.JackpotAmount))
+							.WithFooter($"{component.User.GetFullUsername()}'s Lottery Ticket Purchase handled by Wokebucks")
+							.WithUrl("https://github.com/chicklightning/WokebucksBot")
+							.WithCurrentTimestamp();
 
-				await component.RespondAsync("", ephemeral: true, embed: embedBuilder.Build());
+				await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
 			}
