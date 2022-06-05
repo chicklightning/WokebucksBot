@@ -7,6 +7,9 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "user", Required = Required.Always)]
         public string UserID { get; set; }
 
+        [JsonProperty(PropertyName = "username", Required = Required.Always)]
+        public string UserName { get; set; }
+
         [JsonProperty(PropertyName = "wag", Required = Required.Always)]
         public double Amount { get; set; }
 

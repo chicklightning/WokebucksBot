@@ -2,8 +2,9 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class BalanceModule : ModuleBase<SocketCommandContext>
     {
@@ -20,7 +21,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			_logger = logger;
 			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
-        }
+		}
 
 		[Command("givebucks")]
 		[Summary("Adds a specified amount of Wokebucks to another user's Wokebucks balance (allowed once per five minutes per unique user).")]
@@ -109,11 +110,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "balance", Context.User.GetFullUsername());
 
-			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
 
 			if (userData is null)
 			{
-				userData = new UserData(Context.User.GetFullUsername());
+				userData = new UserData(Context.User);
 				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 
@@ -122,6 +123,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithTitle("$" + string.Format("{0:0.00}", userData.Balance));
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Balance provided by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -134,11 +136,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "transactions", Context.User.GetFullUsername());
 
-			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.GetFullDatabaseId());
+			UserData? userData = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
 
 			if (userData is null)
 			{
-				userData = new UserData(Context.User.GetFullDatabaseId());
+				userData = new UserData(Context.User);
 				await _documentClient.UpsertDocumentAsync<UserData>(userData);
 			}
 
@@ -151,6 +153,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transactions Request handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -167,6 +170,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.WithDescription("You can't change your own Wokebucks ~~dumbass~~.");
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+				embedBuilder.WithCurrentTimestamp();
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
@@ -191,13 +195,15 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			SocketUser caller = Context.User;
 
 			// Check user's relationship to other user to make sure at least an hour has passed
-			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.GetFullDatabaseId());
+			Task<UserData?> callerDataFetchTask = _documentClient.GetDocumentAsync<UserData>(caller.Id.ToString());
 			Task<Leaderboard?> leaderboardFetchTask = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+			Task<Lottery?> fetchLotteryTask = _documentClient.GetDocumentAsync<Lottery>($"{Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString())}");
 
-			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask);
+			await Task.WhenAll(callerDataFetchTask, leaderboardFetchTask, fetchLotteryTask);
 
-			UserData callerData = await callerDataFetchTask ?? new UserData(caller.GetFullDatabaseId());
+			UserData callerData = await callerDataFetchTask ?? new UserData(caller);
 			Leaderboard? leaderboard = await leaderboardFetchTask;
+			Lottery? lottery = await fetchLotteryTask;
 
 			if (leaderboard is null)
 			{
@@ -206,16 +212,23 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				throw e;
 			}
 
+			if (lottery is null)
+			{
+				var e = new InvalidOperationException("Could not find lottery.");
+				_logger.LogError(e, "Could not find lottery.");
+				throw e;
+			}
+
 			var embedBuilder = new EmbedBuilder();
 
 			// Bot owner can call commands unlimited times
-			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.GetFullDatabaseId()) : double.MaxValue;
+			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.Id.ToString()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
 			{
 				// If 5 minutes has not passed, send message saying they have not waited at least 5 min since their last Wokebuck gift, and that x minutes are remaining (The Brad Clauses)
 				await RespondWithFormattedError(embedBuilder, $"Sorry, you have to wait at least **{5 - (int)minutesSinceLastInteractionWithOtherUser} minutes** before you can give Wokebucks to or remove Wokebucks from **{target.GetFullUsername()}**'s balance.");
 
-				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
+				_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>.", commandName, Context.User.GetFullUsername(), target.GetFullUsername());
 			}
 			else // minutesSinceLastInteractionWithOtherUser >= 5
 			{
@@ -225,23 +238,27 @@ namespace Swamp.WokebucksBot.Discord.Commands
 					// If amount needs to be within bounds for normal users
 					await RespondWithFormattedError(embedBuilder, $"Sorry, you have select a value larger than $-5.00 or smaller than $10.00.");
 
-					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullDatabaseId(), target.GetFullUsername());
+					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullUsername(), target.GetFullUsername());
 					return;
 				}
 
-				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.GetFullDatabaseId()) ?? new UserData(target.GetFullDatabaseId());
-				targetData.AddToBalance(amount);
+				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.Id.ToString()) ?? new UserData(target);
+				targetData.UpdateUsernameAndBalance(amount, target.GetFullUsername());
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard
-				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target.GetFullDatabaseId(), targetData.Balance);
+				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
-				callerData.UpdateMostRecentInteractionForUser(target.GetFullDatabaseId());
+				// Add 0.5 to lottery pool:
+				lottery.JackpotAmount += 0.5;
+
+				callerData.UpdateMostRecentInteractionForUser(target.Id.ToString());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
-				Task updateCallerDataTask = !string.Equals(Context.User.GetFullUsername(), target.GetFullUsername()) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
+				Task updateCallerDataTask = !string.Equals(Context.User.Id, target.Id) ? _documentClient.UpsertDocumentAsync<UserData>(callerData) : Task.CompletedTask;
 				Task updateLeaderboard = _documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard);
+				Task updateLottery = _documentClient.UpsertDocumentAsync<Lottery>(lottery);
 
-				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard);
+				await Task.WhenAll(updateTargetDataTask, updateCallerDataTask, updateLeaderboard, updateLottery);
 
 				embedBuilder.WithColor((targetData.IsOverdrawn() ? Color.Red : Color.Green));
 				embedBuilder.WithTitle("Bank Transaction");
@@ -250,10 +267,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				embedBuilder.AddField("Reason", $"{reason}", true);
 				embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Transaction provided by Wokebucks");
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+				embedBuilder.WithCurrentTimestamp();
 
 				await ReplyAsync($"", false, embed: embedBuilder.Build());
 
-				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullDatabaseId(), targetData.ID);
+				_logger.LogInformation($"<{{{CommandName}}}> command successfully completed by user <{{{UserIdKey}}}> for user <{{{TargetUserIdKey}}}> with updated balance <{targetData.Balance}>.", commandName, Context.User.GetFullUsername(), targetData.ID);
 			}
 		}
 
@@ -263,6 +281,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			builder.WithTitle("Invalid Bank Transaction");
 			builder.WithDescription(message);
 			builder.WithFooter($"{Context.User.GetFullUsername()}'s Message provided by Wokebucks");
+			builder.WithCurrentTimestamp();
 			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			return ReplyAsync($"", false, embed: builder.Build());

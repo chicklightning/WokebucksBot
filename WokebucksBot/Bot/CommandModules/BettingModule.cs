@@ -2,8 +2,9 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Swamp.WokebucksBot.CosmosDB;
+using Swamp.WokebucksBot.Bot.Extensions;
 
-namespace Swamp.WokebucksBot.Discord.Commands
+namespace Swamp.WokebucksBot.Bot.CommandModules
 {
     public class BettingModule : InteractionModuleBase<SocketInteractionContext>
 	{
@@ -12,16 +13,11 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 		private readonly ILogger<BettingModule> _logger;
 		private readonly CosmosDBClient _documentClient;
-		private readonly DiscordSocketClient _discordSocketClient;
 
-		public BettingModule(ILogger<BettingModule> logger, DiscordSocketClient discordSocketClient, CosmosDBClient docClient)
+		public BettingModule(ILogger<BettingModule> logger, CosmosDBClient docClient)
 		{
 			_logger = logger;
-			_discordSocketClient = discordSocketClient;
 			_documentClient = docClient;
-
-			_discordSocketClient.SelectMenuExecuted += BetMenuHandler;
-			_discordSocketClient.ModalSubmitted += BetModalHandler;
 		}
 
 		[SlashCommand("startbet", "Start a bet.")]
@@ -50,7 +46,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			// Create a bet using reason and option strings
 			var reducedReason = bettingReason.Length > 200 ? bettingReason.Substring(0, 200) : bettingReason;
-			var bet = new Bet(reducedReason, Context.User.GetFullDatabaseId());
+			var bet = new Bet(reducedReason, Context.User);
 			
 			try
             {
@@ -74,7 +70,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			foreach (string option in bet.OptionTotals.Keys)
             {
 				// Display option, underlying value is combined bet ID and option ID
-				menuBuilder.AddOption(option, new Bet.BetOptionKey(bet.ID, option).FullKey);
+				menuBuilder.AddOption(option, new Bet.BetOptionKey(bet.ID, option, Context.Guild.Id.ToString()).FullKey);
 				count++;
             }
 
@@ -87,6 +83,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.AddField("Started By", $"{Context.User.GetFullUsername()}");
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			await FollowupAsync("", embed: embedBuilder.Build(), components: builder.Build());
 		}
@@ -124,7 +121,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			}
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			if (!string.Equals(bet.OwnerId, Context.User.GetFullDatabaseId()) && !string.Equals(Context.User.Id, application.Owner.Id))
+			if (!string.Equals(bet.OwnerId, Context.User.Id.ToString()) && !string.Equals(Context.User.Id, application.Owner.Id))
             {
 				await FollowupWithFormattedError(Context.User, embedBuilder, "You must be the owner of this bet to end it.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user does not own this bet.", "endbet", Context.User.GetFullUsername());
@@ -148,9 +145,9 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle($"Ending Bet");
 			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Started By", $"{SocketUserExtensions.SwitchToUsername(bet.OwnerId)}");
-			embedBuilder.WithFooter($"{SocketUserExtensions.SwitchToUsername(bet.OwnerId)}'s Bet handled by Wokebucks");
+			embedBuilder.WithFooter($"{bet.OwnerUsername}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+			embedBuilder.WithCurrentTimestamp();
 
 			foreach (var winnerAndWinning in winnersAndWinnings)
             {
@@ -158,84 +155,6 @@ namespace Swamp.WokebucksBot.Discord.Commands
             }
 
 			await FollowupAsync("", embed: embedBuilder.Build());
-		}
-
-		public async Task BetMenuHandler(SocketMessageComponent component)
-		{
-			var betOptionFullKey = string.Join(", ", component.Data.Values);
-			var betOptionKey = new Bet.BetOptionKey(betOptionFullKey);
-
-			// Set up modal to let user add bet amount
-			var tb = new TextInputBuilder()
-							.WithLabel("Bet Amount")
-							.WithCustomId($"{betOptionKey.FullKey}")
-							.WithStyle(TextInputStyle.Short)
-							.WithMinLength(1)
-							.WithMaxLength(3)
-							.WithRequired(true)
-							.WithPlaceholder("Write \"1\" to bet $1.");
-
-			var mb = new ModalBuilder()
-							.WithTitle("Bet Amount")
-							.WithCustomId($"{betOptionKey.FullKey}")
-							.AddTextInput(tb);
-
-			await component.RespondWithModalAsync(mb.Build());
-		}
-
-		public async Task BetModalHandler(SocketModal modal)
-        {
-			await modal.DeferAsync();
-
-			// Get the values of components
-			List<SocketMessageComponentData> components = modal.Data.Components.ToList();
-
-			// Get bet option IDs and check if bet is still running
-			SocketMessageComponentData component = components[0];
-			string betOptionString = component.CustomId;
-			var betOptionKey = new Bet.BetOptionKey(betOptionString);
-			Bet? bet = await _documentClient.GetDocumentAsync<Bet>(betOptionKey.BetId);
-
-			var embedBuilder = new EmbedBuilder();
-			if (bet is null)
-            {
-				// Bet is over, tell them they can no longer bet
-				await FollowupWithFormattedError(modal.User, embedBuilder, "This bet has ended.");
-				_logger.LogError($"<{{{CommandName}}}> failed for user <{{{UserIdKey}}}> since bet has ended.", "addbetmodal", modal.User.GetFullUsername());
-				return;
-			}
-
-			string betAmountString = component.Value;
-			if (!Double.TryParse(betAmountString, out double betAmount) || Double.IsNaN(betAmount) || Double.IsInfinity(betAmount) || betAmount < 0.01 || betAmount > 20)
-            {
-				// Invalid bet amount
-				await FollowupWithFormattedError(modal.User, embedBuilder, "Invalid bet amount, you must bet between $0.01 and $20.00.");
-				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since bet amount was invalid.", "addbetmodal", modal.User.GetFullUsername());
-				return;
-			}
-
-			// Bet is valid, write to db
-			if (!bet.AddBet(betOptionKey.OptionId, modal.User.GetFullDatabaseId(), betAmount))
-            {
-				// Invalid bet amount
-				await FollowupWithFormattedError(modal.User, embedBuilder, "You have already made a wager for this bet.");
-				_logger.LogError($"<{{{CommandName}}}> add bet failed for user <{{{UserIdKey}}}> since user has already bet.", "addbetmodal", modal.User.GetFullUsername());
-				return;
-			}
-
-			await _documentClient.UpsertDocumentAsync<Bet>(bet);
-
-			// Respond to the modal.
-			embedBuilder.WithColor(Color.Blue);
-			embedBuilder.WithTitle($"Wager Entered");
-			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Wager Made By", $"{modal.User.GetFullUsername()}");
-			embedBuilder.AddField("Option Selected", $"{betOptionKey.OptionId}");
-			embedBuilder.AddField("Bet Amount", "$" + string.Format("{0:0.00}", betAmount));
-			embedBuilder.WithFooter($"{modal.User.GetFullUsername()}'s Wager handled by Wokebucks");
-			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
-
-			await modal.FollowupAsync("", embed: embedBuilder.Build());
 		}
 
 		private async Task<IDictionary<string, double>> ReconcileBalancesAsync(Bet bet, string option, string guildId)
@@ -287,10 +206,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 				UserData? userDatum = await getBetInfo;
 				if (userDatum is not null)
 				{
-					// Get that user's bet amount and remove it from their balance
 					double wagerAmount = bet.Wagers[userDatum.ID].Amount;
-					userDatum.AddToBalance(wagerAmount);
-					userDatum.AddTransaction("Wokebucks Bet", $"Entered a wager: {bet.Reason}", -1.0 * wagerAmount);
 
 					// if that user bet on the winning option, divide the option winnings and add to their account
 					string optionName = bet.Wagers[userDatum.ID].Option;
@@ -303,7 +219,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 						userDatum.AddToBalance(userWinnings);
 						userDatum.AddTransaction("Wokebucks Bet", "Won the bet", userWinnings);
 
-						winnersAndWinnings.Add(SocketUserExtensions.SwitchToUsername(userDatum.ID), userWinnings);
+						winnersAndWinnings.Add(userDatum.Username, userWinnings);
 					}
 
 					userData.Add(userDatum);
@@ -312,10 +228,10 @@ namespace Swamp.WokebucksBot.Discord.Commands
 
 			// Write the data back out to the user documents and to leaderboard
 			var writeUsersThatBet = new List<Task>();
-			foreach (UserData userDatum in userData)
+			foreach (UserData? userDatum in userData)
 			{
 				writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync<UserData>(userDatum));
-				leaderboard.UpdateLeaderboard(guildId, userDatum.ID, userDatum.Balance);
+				leaderboard.ReconcileLeaderboard(userDatum.ID, userDatum.Balance, guildId);
 			}
 			writeUsersThatBet.Add(_documentClient.UpsertDocumentAsync(leaderboard));
 
@@ -344,6 +260,7 @@ namespace Swamp.WokebucksBot.Discord.Commands
 			builder.WithTitle("Invalid Bank Transaction");
 			builder.WithDescription(message);
 			builder.WithFooter($"{user.GetFullUsername()}'s Message provided by Wokebucks");
+			builder.WithCurrentTimestamp();
 			builder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 
 			return FollowupAsync($"", embed: builder.Build());

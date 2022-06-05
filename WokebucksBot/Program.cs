@@ -5,7 +5,7 @@ using Discord.WebSocket;
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Swamp.WokebucksBot.CosmosDB;
-using Swamp.WokebucksBot.Discord;
+using Swamp.WokebucksBot.Bot;
 
 namespace Swamp.WokebucksBot
 {
