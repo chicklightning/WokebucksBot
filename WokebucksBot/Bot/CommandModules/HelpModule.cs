@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Swamp.WokebucksBot.Bot.Extensions;
 
 namespace Swamp.WokebucksBot.Bot.CommandModules
@@ -11,26 +12,30 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
         private readonly ILogger<HelpModule> _logger;
         private readonly CommandService _commandService;
+        private readonly InteractionService _interactionService;
 
-        public HelpModule(ILogger<HelpModule> logger, CommandService commandService)
+        public HelpModule(ILogger<HelpModule> logger, CommandService commandService, InteractionService interactionService)
         {
             _logger = logger;
             _commandService = commandService;
+            _interactionService = interactionService;
         }
 
         [Command("info")]
-        [Summary("Provides information on other commands and how they're used and called.")]
+        [Discord.Commands.Summary("Provides information on other commands and how they're used and called.")]
         public async Task CommandInfo()
         {
             _logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "info", Context.User.GetFullUsername());
 
             List<CommandInfo> commands = _commandService.Commands.ToList();
+            List<SlashCommandInfo> slashCommands = _interactionService.SlashCommands.ToList();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithTitle("Wokebucks Bot Commands");
-            embedBuilder.WithColor(Color.Gold);
+            embedBuilder.WithColor(Color.Blue);
             embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Info Request resolved by Wokebucks");
             embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+            embedBuilder.WithCurrentTimestamp();
             foreach (CommandInfo command in commands)
             {
                 // Get the command Summary attribute information
@@ -39,7 +44,16 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
                 embedBuilder.AddField($"${command.Name}", embedFieldText);
             }
 
+            foreach (SlashCommandInfo slashCommand in slashCommands)
+            {
+                // Get the command Summary attribute information
+                string embedFieldText = slashCommand.Description ?? "No description available\n";
+
+                embedBuilder.AddField($"/{slashCommand.Name}", embedFieldText);
+            }
+
             await ReplyAsync("", false, embedBuilder.Build());
+            _logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "info", Context.User.GetFullUsername());
         }
     }
 }
