@@ -138,9 +138,6 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			// Select the winning option and divvy out money to all users who bet
 			IDictionary<string, double> winnersAndWinnings = await ReconcileBalancesAsync(bet, option, Context.Guild.Id.ToString());
 
-			// Delete bet from db
-			await _documentClient.DeleteDocumentAsync<Bet>(bet.ID);
-
 			// Say the bet is over announcing the total winnings and users
 			embedBuilder.WithColor(Color.Gold);
 			embedBuilder.WithTitle($"Ending Bet");
@@ -149,10 +146,35 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 			embedBuilder.WithCurrentTimestamp();
 
-			foreach (var winnerAndWinning in winnersAndWinnings)
+			var updateTasks = new List<Task>();
+			updateTasks.Add(_documentClient.DeleteDocumentAsync<Bet>(bet.ID));
+			if (winnersAndWinnings.Count() > 0)
             {
-				embedBuilder.AddField($"{winnerAndWinning.Key} won!", $"${winnerAndWinning.Value}");
-            }
+				foreach (var winnerAndWinning in winnersAndWinnings)
+				{
+					embedBuilder.AddField($"{winnerAndWinning.Key} won!", $"${winnerAndWinning.Value}");
+				}
+			}
+			else
+			{
+				embedBuilder.WithDescription("Nobody won, the winnings will go to the lottery pool.");
+
+				Lottery? lottery = await _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString()));
+				if (lottery is null)
+				{
+					_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since lottery could not be found.", "endbet", Context.User.GetFullUsername());
+					throw new NullReferenceException("Failed to fetch lottery.");
+				}
+
+				foreach (var optionTotal in bet.OptionTotals)
+                {
+					lottery.JackpotAmount += optionTotal.Value.OptionTotal;
+                }
+
+				updateTasks.Add(_documentClient.UpsertDocumentAsync<Lottery>(lottery));
+			}
+
+			await Task.WhenAll(updateTasks);
 
 			await FollowupAsync("", embed: embedBuilder.Build());
 		}
