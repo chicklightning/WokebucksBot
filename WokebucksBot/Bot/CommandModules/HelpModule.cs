@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.Interactions;
 using Swamp.WokebucksBot.Bot.Extensions;
 
 namespace Swamp.WokebucksBot.Bot.CommandModules
@@ -12,23 +11,20 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
         private readonly ILogger<HelpModule> _logger;
         private readonly CommandService _commandService;
-        private readonly InteractionService _interactionService;
 
-        public HelpModule(ILogger<HelpModule> logger, CommandService commandService, InteractionService interactionService)
+        public HelpModule(ILogger<HelpModule> logger, CommandService commandService)
         {
             _logger = logger;
             _commandService = commandService;
-            _interactionService = interactionService;
         }
 
         [Command("info")]
-        [Discord.Commands.Summary("Provides information on other commands and how they're used and called.")]
+        [Summary("Provides information on other commands and how they're used and called.")]
         public async Task CommandInfo()
         {
             _logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "info", Context.User.GetFullUsername());
 
             List<CommandInfo> commands = _commandService.Commands.ToList();
-            List<SlashCommandInfo> slashCommands = _interactionService.SlashCommands.ToList();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithTitle("Wokebucks Bot Commands");
@@ -42,14 +38,6 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
                 string embedFieldText = command.Summary ?? "No description available\n";
 
                 embedBuilder.AddField($"${command.Name}", embedFieldText);
-            }
-
-            foreach (SlashCommandInfo slashCommand in slashCommands)
-            {
-                // Get the command Summary attribute information
-                string embedFieldText = slashCommand.Description ?? "No description available\n";
-
-                embedBuilder.AddField($"/{slashCommand.Name}", embedFieldText);
             }
 
             await ReplyAsync("", false, embedBuilder.Build());
