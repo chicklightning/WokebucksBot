@@ -44,42 +44,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			{
 				embedBuilder.AddField("Next Level", $"{Levels.AllLevels[user.Level + 1].Name}");
 				embedBuilder.AddField("Cost to Purchase", "$" + string.Format("{0:0.00}", Levels.AllLevels[user.Level + 1].Amount));
-			}
-			else // User is at the highest level already, they can't buy any more levels
-			{
-				embedBuilder.AddField("Next Level", "You have achieved the highest level.");
-			}
-
-			await ReplyAsync("", embed: embedBuilder.Build());
-
-			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
-		}
-
-		[Command("buylevel")]
-		[Summary("Lets you purchase the next level tier if you have enough money.")]
-		public async Task BuyLevelAsync()
-		{
-			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "buylevel", Context.User.GetFullUsername());
-
-			UserData? user = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
-			if (user is null)
-			{
-				user = new UserData(Context.User);
-				await _documentClient.UpsertDocumentAsync<UserData>(user);
-			}
-
-			var embedBuilder = new EmbedBuilder()
-										.WithColor(Color.Blue)
-										.WithTitle("Buy a Level")
-										.WithDescription($"You are currently a **{Levels.AllLevels[user.Level]}**.")
-										.WithFooter($"{Context.User.GetFullUsername()}'s Level Inquiry handled by Wokebucks")
-										.WithUrl("https://github.com/chicklightning/WokebucksBot")
-										.WithCurrentTimestamp();
-
-			if (user.Level < 11)
-			{
-				embedBuilder.AddField("Next Level", $"{Levels.AllLevels[user.Level + 1].Name}");
-				embedBuilder.AddField("Cost to Purchase", "$" + string.Format("{0:0.00}", Levels.AllLevels[user.Level + 1].Amount));
+				embedBuilder.AddField("Your Balance", "$" + string.Format("{0:0.00}", user.Balance));
 
 				var flyingDollarEmoji = new Emoji("\uD83D\uDCB8");
 				var buttonBuilder = new ButtonBuilder()
@@ -87,13 +52,19 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 											.WithLabel("Agree to purchase?")
 											.WithCustomId("level")
 											.WithStyle(ButtonStyle.Success);
+
+				var componentBuilder = new ComponentBuilder()
+											.WithButton(buttonBuilder);
+
+				await ReplyAsync("", embed: embedBuilder.Build(), components: componentBuilder.Build());
 			}
 			else // User is at the highest level already, they can't buy any more levels
 			{
 				embedBuilder.AddField("Next Level", "You have achieved the highest level.");
+				await ReplyAsync("", embed: embedBuilder.Build());
 			}
 
-			await ReplyAsync("", embed: embedBuilder.Build());
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
 		}
 	}
 }
