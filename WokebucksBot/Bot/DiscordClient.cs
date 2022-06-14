@@ -343,7 +343,7 @@ namespace Swamp.WokebucksBot.Bot
 
 					await Task.WhenAll(updateTasks);
 
-					embedBuilder.WithColor(Color.Blue)
+					embedBuilder.WithColor(newLevel.Color)
 							.WithTitle("You Purchased a Level")
 							.WithDescription($"You are now a {newLevel.Name}.")
 							.WithFooter($"{component.User.GetFullUsername()}'s Level Purchase handled by Wokebucks")
