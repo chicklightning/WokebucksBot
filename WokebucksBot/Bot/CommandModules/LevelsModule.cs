@@ -19,7 +19,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			_documentClient = docClient;
 		}
 
-		[Command("buylevel")]
+		[Command("level")]
 		[Summary("Provides information on the your current level.")]
 		public async Task GetLevelAsync()
 		{
