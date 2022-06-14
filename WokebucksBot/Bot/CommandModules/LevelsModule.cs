@@ -19,8 +19,8 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			_documentClient = docClient;
 		}
 
-		[Command("level")]
-		[Summary("Provides information on the your current level and the next level in the tier.")]
+		[Command("buylevel")]
+		[Summary("Provides information on the your current level.")]
 		public async Task GetLevelAsync()
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
@@ -38,6 +38,33 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
 										.WithDescription(description)
 										.WithFooter($"{Context.User.GetFullUsername()}'s Level Inquiry handled by Wokebucks")
+										.WithUrl("https://github.com/chicklightning/WokebucksBot")
+										.WithCurrentTimestamp();
+
+			await ReplyAsync("", embed: embedBuilder.Build());
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
+		}
+
+		[Command("buylevel")]
+		[Summary("Provides information on the your current level and the next level in the tier.")]
+		public async Task BuyLevelAsync()
+		{
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "buylevel", Context.User.GetFullUsername());
+
+			UserData? user = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
+			if (user is null)
+			{
+				user = new UserData(Context.User);
+				await _documentClient.UpsertDocumentAsync<UserData>(user);
+			}
+
+			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
+			var embedBuilder = new EmbedBuilder()
+										.WithColor(Color.Blue)
+										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
+										.WithDescription(description)
+										.WithFooter($"{Context.User.GetFullUsername()}'s Level Purchase Inquiry handled by Wokebucks")
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
 
@@ -65,7 +92,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				await ReplyAsync("", embed: embedBuilder.Build());
 			}
 
-			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "buylevel", Context.User.GetFullUsername());
 		}
 	}
 }
