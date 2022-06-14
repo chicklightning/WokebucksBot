@@ -108,7 +108,7 @@ namespace Swamp.WokebucksBot.Bot
         {
             Id = 11,
             Name = "Galaxy Brain",
-            Amount = 200,
+            Amount = 250,
             Color = Color.Magenta,
             UpperLimit = 20,
             LowerLimit = -15
