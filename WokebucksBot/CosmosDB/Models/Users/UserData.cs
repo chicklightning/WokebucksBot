@@ -18,12 +18,16 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "username", Required = Required.Always)]
         public string Username { get; set; }
 
+        [JsonProperty(PropertyName = "lvl", Required = Required.Always)]
+        public uint Level { get; set; }
+
         public UserData(SocketUser user) : base(user.Id.ToString())
         {
             Balance = 0;
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
             TransactionLog = new List<Transaction>();
             Username = user.GetFullUsername();
+            Level = uint.MinValue;
         }
 
         [JsonConstructor]
@@ -33,9 +37,10 @@ namespace Swamp.WokebucksBot.CosmosDB
             LastAccessTimes = new Dictionary<string, DateTimeOffset>();
             TransactionLog = new List<Transaction>();
             Username = string.Empty;
+            Level = uint.MinValue;
         }
 
-        public void UpdateUsernameAndBalance(double amount, string username)
+        public void UpdateUsernameAndAddToBalance(double amount, string username)
         {
             Balance += amount;
             Username = username;

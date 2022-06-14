@@ -127,12 +127,23 @@ namespace Swamp.WokebucksBot.Bot
         {
 			// Create new lottery for this guild if it doesn't exist already
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by guild <{{{UserIdKey}}}>.", "joinguild", guild.Id.ToString());
+
+			var setupTasks = new List<Task>();
+
 			Lottery? lottery = await _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString()));
 			if (lottery is null)
             {
 				lottery = new Lottery(guild.Id.ToString());
-				await _documentClient.UpsertDocumentAsync<Lottery>(lottery);
+				setupTasks.Add(_documentClient.UpsertDocumentAsync<Lottery>(lottery));
             }
+
+			// Create roles for this guild
+			foreach (var level in Levels.AllLevels.Values)
+            {
+				setupTasks.Add(guild.CreateRoleAsync(name: level.Name, color: level.Color, isHoisted: true, isMentionable: true));
+            }
+
+			await Task.WhenAll(setupTasks);
 
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by guild <{{{UserIdKey}}}>.", "joinguild", guild.Id.ToString());
 		}
@@ -196,14 +207,17 @@ namespace Swamp.WokebucksBot.Bot
 		public async Task HandleButtonAsync(SocketMessageComponent component)
 		{
 			// We can now check for our custom id
-			if (component.Data.CustomId.Contains("lottery"))
+			if (string.Equals(component.Data.CustomId, "lottery"))
 			{
 				await component.DeferAsync();
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
 
+				var channel = component.Channel as SocketGuildChannel;
+				SocketGuild guild = channel?.Guild ?? throw new NullReferenceException($"Unable to get guild for message with id {component.Message.Id}");
+
 				Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
-				Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(component.Data.CustomId);
-				Task<UserData?> fetchUser = _documentClient.GetDocumentAsync<UserData>($"{component.User.Id}");
+				Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString()));
+				Task<UserData?> fetchUser = _documentClient.GetDocumentAsync<UserData>(component.User.Id.ToString());
 
 				await Task.WhenAll(fetchLeaderboard, fetchLottery, fetchUser);
 
@@ -232,10 +246,10 @@ namespace Swamp.WokebucksBot.Bot
 					return;
 				}
 
-				userData.UpdateUsernameAndBalance(-2, component.User.GetFullUsername());
+				userData.UpdateUsernameAndAddToBalance(-2, component.User.GetFullUsername());
 				userData.AddTransaction("Wokebucks Lottery", "Purchased a ticket", -2);
 
-				leaderboard.UpdateLeaderboard(Lottery.GetGuildIdFromLotteryId(component.Data.CustomId), component.User, userData.Balance);
+				leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
 
 				lottery.AddTicketPurchase(component.User.Id.ToString());
 
@@ -245,7 +259,6 @@ namespace Swamp.WokebucksBot.Bot
 
 				await Task.WhenAll(writeLottery, writeUser, writeLeaderboard);
 
-				
 				embedBuilder.WithColor(Color.Blue)
 							.WithTitle("You Purchased a Lottery Ticket")
 							.WithDescription($"You have bought {lottery.TicketsPurchased[component.User.Id.ToString()]} tickets.")
@@ -257,6 +270,91 @@ namespace Swamp.WokebucksBot.Bot
 				await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
+			}
+
+			if (string.Equals(component.Data.CustomId, "level"))
+			{
+				await component.DeferAsync();
+				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "buylevel", component.User.GetFullUsername());
+
+				var embedBuilder = new EmbedBuilder();
+				UserData userData = await _documentClient.GetDocumentAsync<UserData>(component.User.Id.ToString()) ?? new UserData(component.User);
+
+				if (userData.Level < 11)
+                {
+					if (userData.Balance < Levels.AllLevels[userData.Level + 1].Amount)
+                    {
+						await component.FollowupWithErrorAsync(embedBuilder, component.User, "You're too poor to buy this level.");
+						_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have too low of a balance.", "buylevel", component.User.GetFullUsername());
+						return;
+					}
+
+					var channel = component.Channel as SocketGuildChannel;
+					SocketGuild guild = channel?.Guild ?? throw new NullReferenceException($"Unable to get guild for message with id {component.Message.Id}");
+
+					Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+					Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString()));
+
+					Lottery? lottery = await fetchLottery;
+					if (lottery is null)
+					{
+						var e = new InvalidOperationException("Could not find lottery.");
+						_logger.LogError(e, "Could not find lottery.");
+						throw e;
+					}
+
+					Leaderboard? leaderboard = await fetchLeaderboard;
+					if (leaderboard is null)
+					{
+						var e = new InvalidOperationException("Could not find leaderboard.");
+						_logger.LogError(e, "Could not find leaderboard.");
+						throw e;
+					}
+
+					var updateTasks = new List<Task>();
+
+					var oldLevel = Levels.AllLevels[userData.Level];
+					userData.Level += 1;
+					var newLevel = Levels.AllLevels[userData.Level];
+
+					// Change user's role according to the new level:
+					IGuildUser guildUser = component.User as IGuildUser ?? throw new NullReferenceException($"Unable to reference user with id <{component.User.Id}> as IGuildUser.");
+					SocketRole oldRole = guild.Roles.First(role => role.Name == oldLevel.Name);
+					SocketRole newRole = guild.Roles.First(role => role.Name == newLevel.Name);
+					updateTasks.Add(guildUser.AddRoleAsync(newRole));
+					updateTasks.Add(guildUser.RemoveRoleAsync(oldRole));
+
+					// Update user amounts and transactions
+					userData.UpdateUsernameAndAddToBalance(newLevel.Amount * -1, component.User.GetFullUsername());
+					userData.AddTransaction("Wokebucks Leveling System", $"Purchased the next level so now they're a {newLevel.Name}!", newLevel.Amount * -1);
+					updateTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
+
+					// Update leaderboard
+					leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
+					updateTasks.Add(_documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard));
+
+					// Add $20 to lottery for interaction
+					lottery.JackpotAmount += 20;
+					updateTasks.Add(_documentClient.UpsertDocumentAsync<Lottery>(lottery));
+
+					await Task.WhenAll(updateTasks);
+
+					embedBuilder.WithColor(Color.Blue)
+							.WithTitle("You Purchased a Level")
+							.WithDescription($"You are now a {newLevel.Name}.")
+							.WithFooter($"{component.User.GetFullUsername()}'s Level Purchase handled by Wokebucks")
+							.WithUrl("https://github.com/chicklightning/WokebucksBot")
+							.WithCurrentTimestamp();
+
+					await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
+					_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "buylevel", component.User.GetFullUsername());
+				}
+				else
+                {
+					await component.FollowupWithErrorAsync(embedBuilder, component.User, "You are already the highest woke level available, congratulations!");
+					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have already reached max level.", "buylevel", component.User.GetFullUsername());
+					return;
+				}
 			}
 		}
 
@@ -355,7 +453,7 @@ namespace Swamp.WokebucksBot.Bot
             {
 				userData = new UserData(modal.User);
             }
-			userData.UpdateUsernameAndBalance(-1 * betAmount, modal.User.GetFullUsername());
+			userData.UpdateUsernameAndAddToBalance(-1 * betAmount, modal.User.GetFullUsername());
 			userData.AddTransaction("Wokebucks Bet", $"Entered a wager: {bet.Reason}", -1.0 * betAmount);
 
 			leaderboard.UpdateLeaderboard(betOptionKey.GuildId, modal.User, userData.Balance);

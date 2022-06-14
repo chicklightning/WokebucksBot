@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-WokebucksBot-69860717-3E5E-4187-B06D-58A8703E047A</UserSecretsId>
+    <RootNamespace>Swamp.WokebucksBot</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Properties\launchSettings.json" />

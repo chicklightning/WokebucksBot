@@ -243,7 +243,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				}
 
 				UserData targetData = await _documentClient.GetDocumentAsync<UserData>(target.Id.ToString()) ?? new UserData(target);
-				targetData.UpdateUsernameAndBalance(amount, target.GetFullUsername());
+				targetData.UpdateUsernameAndAddToBalance(amount, target.GetFullUsername());
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
 				// Update leaderboard

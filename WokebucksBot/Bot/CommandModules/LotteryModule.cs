@@ -25,7 +25,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 		{
 			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "lottery", Context.User.GetFullUsername());
 
-			var lottery = await _documentClient.GetDocumentAsync<Lottery>($"{Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString())}");
+			var lottery = await _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString()));
 			if (lottery is null)
 			{
 				var e = new InvalidOperationException("Could not find lottery.");
@@ -37,7 +37,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			var buttonBuilder = new ButtonBuilder()
 										.WithEmote(ticketEmoji)
 										.WithLabel("Buy a ticket")
-										.WithCustomId($"{Lottery.FormatLotteryIdFromGuildId(Context.Guild.Id.ToString())}")
+										.WithCustomId("lottery")
 										.WithStyle(ButtonStyle.Primary);
 			var componentBuilder = new ComponentBuilder()
 										.WithButton(buttonBuilder);
