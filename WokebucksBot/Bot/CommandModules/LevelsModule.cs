@@ -32,10 +32,11 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				await _documentClient.UpsertDocumentAsync<UserData>(user);
 			}
 
+			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level]}**." : "You have not purchased any levels.";
 			var embedBuilder = new EmbedBuilder()
 										.WithColor(Color.Blue)
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
-										.WithDescription($"You are currently a **{Levels.AllLevels[user.Level]}**.")
+										.WithDescription(description)
 										.WithFooter($"{Context.User.GetFullUsername()}'s Level Inquiry handled by Wokebucks")
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
