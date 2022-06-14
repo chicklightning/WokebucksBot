@@ -45,13 +45,6 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
             }
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			if (double.IsNaN(amount) || amount < 0.01 || (amount > 10 && application.Owner.Id != Context.User.Id))
-			{
-				await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and $10.00.");
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to assign an invalid value: <{amount}>.", "givebucks", Context.User.GetFullUsername());
-				return;
-			}
-
 			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
@@ -85,13 +78,6 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			}
 
 			IApplication application = await Context.Client.GetApplicationInfoAsync().ConfigureAwait(continueOnCapturedContext: false);
-			if (double.IsNaN(amount) || amount < 0.01 || (amount > 5 && application.Owner.Id != Context.User.Id))
-			{
-				await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and $5.00.");
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to assign an invalid value: <{amount}>.", "takebucks", Context.User.GetFullUsername());
-				return;
-			}
-
 			if (await ReactIfSelfWhereNotAllowedAsync(application, user, Context.Message))
 			{
 				return;
@@ -221,6 +207,13 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
 			var embedBuilder = new EmbedBuilder();
 
+			if (double.IsNaN(amount))
+			{
+				await RespondWithFormattedError(embedBuilder, "You must select a valid amount of Wokebucks.");
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to assign an invalid value: <{amount}>.", commandName, Context.User.GetFullUsername());
+				return;
+			}
+
 			// Bot owner can call commands unlimited times
 			double minutesSinceLastInteractionWithOtherUser = Context.User.Id != application.Owner.Id ? callerData.GetMinutesSinceLastUserInteractionTime(target.Id.ToString()) : double.MaxValue;
 			if (minutesSinceLastInteractionWithOtherUser < 5)
@@ -232,13 +225,19 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			}
 			else // minutesSinceLastInteractionWithOtherUser >= 5
 			{
-				// Let the bot owner do whatever amount, others can only subtract at most 5 or add at most 10
-				if (Context.User.Id != application.Owner.Id && (amount > 10 || amount < -5))
-                {
-					// If amount needs to be within bounds for normal users
-					await RespondWithFormattedError(embedBuilder, $"Sorry, you have select a value larger than $-5.00 or smaller than $10.00.");
-
-					_logger.LogInformation($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting user <{{{TargetUserIdKey}}}>: Wokebucks value invalid.", commandName, Context.User.GetFullUsername(), target.GetFullUsername());
+				// Let the bot owner do whatever amount
+				double giveCapAmount = (callerData.Level > 0) ? Levels.AllLevels[callerData.Level].UpperLimit : 10;
+				double takeCapAmount = (callerData.Level > 0) ? Levels.AllLevels[callerData.Level].LowerLimit : -5;
+				if (string.Equals(commandName, "givebucks") && (amount < 0.01 || (amount > giveCapAmount && application.Owner.Id != Context.User.Id)))
+				{
+					await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and ${string.Format("{0:0.00}", giveCapAmount)}.");
+					_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to give an invalid value: <{amount}>.", commandName, Context.User.GetFullUsername());
+					return;
+				}
+				else if (string.Equals(commandName, "takebucks") && (amount > -0.01 || (amount < takeCapAmount && application.Owner.Id != Context.User.Id)))
+				{
+					await RespondWithFormattedError(embedBuilder, $"You must select an amount between $0.01 and ${string.Format("{0:0.00}", takeCapAmount * -1)}.");
+					_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> attempting to take an invalid value: <{amount}>.", commandName, Context.User.GetFullUsername());
 					return;
 				}
 
@@ -249,8 +248,8 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				// Update leaderboard
 				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
-				// Add 0.5 to lottery pool:
-				lottery.JackpotAmount += 0.5;
+				// Add $1 to lottery pool:
+				lottery.JackpotAmount += 1;
 
 				callerData.UpdateMostRecentInteractionForUser(target.Id.ToString());
 				Task updateTargetDataTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
