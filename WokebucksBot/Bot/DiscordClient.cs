@@ -174,6 +174,7 @@ namespace Swamp.WokebucksBot.Bot
 				leaderboard.ReconcileLeaderboard(winner.ID, winner.Balance, context.Guild.Id.ToString());
 
 				writesToLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Lottery>(new Lottery(context.Guild.Id.ToString())));
+				writesToLotteriesAndUsers.Add(_documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard));
 
 				var embedBuilder = new EmbedBuilder()
 										.WithColor(Color.Gold)
