@@ -173,7 +173,13 @@ namespace Swamp.WokebucksBot.Bot
 					throw e;
 				}
 
-				string winnerId = lottery.GetWeightedRandomTotals();
+				string? winnerId = lottery.GetWeightedRandomTotals();
+
+				if (string.IsNullOrEmpty(winnerId))
+                {
+					_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>, but no lottery tickets have been purchased.", "resolveLottery", context.User.Id);
+					return;
+                }
 
 				// If winner didn't already win today, fetch their document otherwise just grab it from the dictionary
 				UserData winner = await _documentClient.GetDocumentAsync<UserData>(winnerId) ?? throw new NullReferenceException($"User with id <{winnerId}> failed to be created prior to lottery reconciliation but still had a lottery ticket purchased.");

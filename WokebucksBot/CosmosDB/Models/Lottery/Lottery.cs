@@ -54,8 +54,13 @@ namespace Swamp.WokebucksBot.CosmosDB
             JackpotAmount += 2;
         }
 
-        public string GetWeightedRandomTotals()
+        public string? GetWeightedRandomTotals()
         {
+            if (TotalTicketsPurchased == 0)
+            {
+                return null;
+            }
+
             // totalWeight is the sum of all brokers' weight
 
             int randomNumber = _random.Next(0, TotalTicketsPurchased);
