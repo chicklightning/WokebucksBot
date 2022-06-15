@@ -46,6 +46,30 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "level", Context.User.GetFullUsername());
 		}
 
+		[Command("levels")]
+		[Summary("Provides information on all levels available.")]
+		public async Task GetLevelsAsync()
+		{
+			_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "levels", Context.User.GetFullUsername());
+
+			var embedBuilder = new EmbedBuilder()
+										.WithColor(Color.Teal)
+										.WithTitle("Wokebucks Levels")
+										.WithDescription("Provides the name of each level, the amount required to purchase the level, and limit increases for giving and receiving Wokebucks.")
+										.WithFooter($"{Context.User.GetFullUsername()}'s Levels Inquiry handled by Wokebucks")
+										.WithUrl("https://github.com/chicklightning/WokebucksBot")
+										.WithCurrentTimestamp();
+
+			foreach (var level in Levels.AllLevels.Values)
+            {
+				embedBuilder.AddField(level.Name, $"Costs ${string.Format("{0:0.00}", level.Amount)} to purchase. Can give up to ${string.Format("{0:0.00}", level.UpperLimit)} and take up to ${string.Format("{0:0.00}", level.LowerLimit)}.");
+            }
+
+			await ReplyAsync("", embed: embedBuilder.Build());
+
+			_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "levels", Context.User.GetFullUsername());
+		}
+
 		[Command("buylevel")]
 		[Summary("Provides information on the your current level and the next level in the tier.")]
 		public async Task BuyLevelAsync()
