@@ -34,7 +34,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
 			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
 			var embedBuilder = new EmbedBuilder()
-                                        .WithColor(Levels.AllLevels[user.Level].Color)
+                                        .WithColor((user.Level > 0) ? Levels.AllLevels[user.Level].Color : Color.Teal)
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
 										.WithDescription(description)
 										.WithFooter($"{Context.User.GetFullUsername()}'s Level Inquiry handled by Wokebucks")
@@ -85,7 +85,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 
 			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
 			var embedBuilder = new EmbedBuilder()
-										.WithColor(Levels.AllLevels[user.Level].Color)
+										.WithColor((user.Level > 0) ? Levels.AllLevels[user.Level].Color : Color.Teal)
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
 										.WithDescription(description)
 										.WithFooter($"{Context.User.GetFullUsername()}'s Level Purchase Inquiry handled by Wokebucks")
