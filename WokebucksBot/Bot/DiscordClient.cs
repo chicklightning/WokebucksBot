@@ -321,21 +321,19 @@ namespace Swamp.WokebucksBot.Bot
 
 					userData.Level += 1;
 					var newLevel = Levels.AllLevels[userData.Level];
-
-					// Change user's role according to the new level:
-					IGuildUser guildUser = component.User as IGuildUser ?? throw new NullReferenceException($"Unable to reference user with id <{component.User.Id}> as IGuildUser.");
 					
 					// Change roles and update leaderboards
 					foreach (var guild in mutualGuilds)
                     {
 						SocketRole newRole = guild.Roles.First(role => role.Name == newLevel.Name);
-						updateTasks.Add(guildUser.AddRoleAsync(newRole));
+						IGuildUser user = guild.GetUser(component.User.Id);
+						updateTasks.Add(user.AddRoleAsync(newRole));
 
 						// If user had an old role, remove that role
 						if (userData.Level - 1 > 0)
 						{
 							SocketRole oldRole = guild.Roles.First(role => role.Name == Levels.AllLevels[userData.Level - 1].Name);
-							updateTasks.Add(guildUser.RemoveRoleAsync(oldRole));
+							updateTasks.Add(user.RemoveRoleAsync(oldRole));
 						}
 
 						leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
