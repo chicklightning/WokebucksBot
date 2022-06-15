@@ -290,7 +290,7 @@ namespace Swamp.WokebucksBot.Bot
 
 					var mutualGuilds = component.User.MutualGuilds;
 					var channel = component.Channel as SocketGuildChannel;
-					var purchaseGuild = channel?.Guild ?? throw new ArgumentNullException("Unable to find guild associated with channel.");
+					SocketGuild purchaseGuild = channel?.Guild ?? throw new ArgumentNullException("Unable to find guild associated with channel.");
 
 					Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
 					Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(purchaseGuild.Id.ToString()));
