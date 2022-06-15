@@ -32,7 +32,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				await _documentClient.UpsertDocumentAsync<UserData>(user);
 			}
 
-			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
+			string description = (user.Level > 0) ? $"You are currently a{(Levels.AllLevels[user.Level].Name[0] == 'E' || Levels.AllLevels[user.Level].Name[0] == 'U' ? "n" : string.Empty )} **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
 			var embedBuilder = new EmbedBuilder()
                                         .WithColor((user.Level > 0) ? Levels.AllLevels[user.Level].Color : Color.Teal)
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")
@@ -83,7 +83,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				await _documentClient.UpsertDocumentAsync<UserData>(user);
 			}
 
-			string description = (user.Level > 0) ? $"You are currently a **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
+			string description = (user.Level > 0) ? $"You are currently a{(Levels.AllLevels[user.Level].Name[0] == 'E' || Levels.AllLevels[user.Level].Name[0] == 'U' ? "n" : string.Empty)} **{Levels.AllLevels[user.Level].Name}**." : "You have not purchased any levels.";
 			var embedBuilder = new EmbedBuilder()
 										.WithColor((user.Level > 0) ? Levels.AllLevels[user.Level].Color : Color.Teal)
 										.WithTitle($"{Context.User.GetFullUsername()}'s Level")

@@ -267,7 +267,7 @@ namespace Swamp.WokebucksBot.Bot
 
 				embedBuilder.WithColor(Color.Blue)
 							.WithTitle("You Purchased a Lottery Ticket")
-							.WithDescription($"You have bought {lottery.TicketsPurchased[component.User.Id.ToString()]} tickets.")
+							.WithDescription($"You have bought {lottery.TicketsPurchased[component.User.Id.ToString()]} ticket{(lottery.TicketsPurchased[component.User.Id.ToString()] > 1 ? "s" : string.Empty)}.")
 							.AddField("Jackpot Total", "$" + string.Format("{0:0.00}", lottery.JackpotAmount))
 							.WithFooter($"{component.User.GetFullUsername()}'s Lottery Ticket Purchase handled by Wokebucks")
 							.WithUrl("https://github.com/chicklightning/WokebucksBot")
@@ -341,7 +341,7 @@ namespace Swamp.WokebucksBot.Bot
 
 					// Update user amounts and transactions
 					userData.UpdateUsernameAndAddToBalance(newLevel.Amount * -1, component.User.GetFullUsername());
-					userData.AddTransaction("Wokebucks Leveling System", $"Purchased the next level so now they're a {newLevel.Name}!", newLevel.Amount * -1);
+					userData.AddTransaction("Wokebucks Leveling System", $"Purchased the next level so now they're a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}!", newLevel.Amount * -1);
 					updateTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
 
 					// Update leaderboard
@@ -355,7 +355,7 @@ namespace Swamp.WokebucksBot.Bot
 
 					embedBuilder.WithColor(newLevel.Color)
 							.WithTitle("You Purchased a Level")
-							.WithDescription($"You are now a {newLevel.Name}.")
+							.WithDescription($"You are now a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}.")
 							.WithFooter($"{component.User.GetFullUsername()}'s Level Purchase handled by Wokebucks")
 							.WithUrl("https://github.com/chicklightning/WokebucksBot")
 							.WithCurrentTimestamp();
