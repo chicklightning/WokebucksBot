@@ -271,8 +271,7 @@ namespace Swamp.WokebucksBot.Bot
 
 				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "lotteryticket", component.User.GetFullUsername());
 			}
-
-			if (string.Equals(component.Data.CustomId, "level"))
+			else if (string.Equals(component.Data.CustomId, "level"))
 			{
 				await component.DeferAsync();
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "buylevel", component.User.GetFullUsername());

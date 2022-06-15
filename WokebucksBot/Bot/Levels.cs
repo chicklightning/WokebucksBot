@@ -123,7 +123,7 @@ namespace Swamp.WokebucksBot.Bot
             { 6, HasOneWrinkleBrain },
             { 7, KindaWrinkleBrain },
             { 8, WrinkleBrain },
-            { 9, VerySmoothBrain },
+            { 9, VeryWrinkleBrain },
             { 10, ExtremelyWrinkleBrain },
             { 11, GalaxyBrain }
         };
