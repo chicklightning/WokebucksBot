@@ -32,7 +32,8 @@ namespace Swamp.WokebucksBot.CosmosDB
                 {
                     Balance = balance,
                     Guilds = new HashSet<string>() { guildId },
-                    Username = user.GetFullUsername()
+                    Username = user.GetFullUsername(),
+                    UserId = userId
                 };
             }
             else
