@@ -288,11 +288,12 @@ namespace Swamp.WokebucksBot.Bot
 						return;
 					}
 
+					var mutualGuilds = component.User.MutualGuilds;
 					var channel = component.Channel as SocketGuildChannel;
-					SocketGuild guild = channel?.Guild ?? throw new NullReferenceException($"Unable to get guild for message with id {component.Message.Id}");
+					var purchaseGuild = channel?.Guild ?? throw new ArgumentNullException("Unable to find guild associated with channel.");
 
 					Task<Leaderboard?> fetchLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
-					Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(guild.Id.ToString()));
+					Task<Lottery?> fetchLottery = _documentClient.GetDocumentAsync<Lottery>(Lottery.FormatLotteryIdFromGuildId(purchaseGuild.Id.ToString()));
 
 					Lottery? lottery = await fetchLottery;
 					if (lottery is null)
@@ -317,15 +318,22 @@ namespace Swamp.WokebucksBot.Bot
 
 					// Change user's role according to the new level:
 					IGuildUser guildUser = component.User as IGuildUser ?? throw new NullReferenceException($"Unable to reference user with id <{component.User.Id}> as IGuildUser.");
-					SocketRole newRole = guild.Roles.First(role => role.Name == newLevel.Name);
-					updateTasks.Add(guildUser.AddRoleAsync(newRole));
 					
-					// If user had an old role, remove that role
-					if (userData.Level - 1 > 0)
+					// Change roles and update leaderboards
+					foreach (var guild in mutualGuilds)
                     {
-						SocketRole oldRole = guild.Roles.First(role => role.Name == Levels.AllLevels[userData.Level - 1].Name);
-						updateTasks.Add(guildUser.RemoveRoleAsync(oldRole));
-                    }
+						SocketRole newRole = guild.Roles.First(role => role.Name == newLevel.Name);
+						updateTasks.Add(guildUser.AddRoleAsync(newRole));
+
+						// If user had an old role, remove that role
+						if (userData.Level - 1 > 0)
+						{
+							SocketRole oldRole = guild.Roles.First(role => role.Name == Levels.AllLevels[userData.Level - 1].Name);
+							updateTasks.Add(guildUser.RemoveRoleAsync(oldRole));
+						}
+
+						leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
+					}
 
 					// Update user amounts and transactions
 					userData.UpdateUsernameAndAddToBalance(newLevel.Amount * -1, component.User.GetFullUsername());
@@ -333,7 +341,6 @@ namespace Swamp.WokebucksBot.Bot
 					updateTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
 
 					// Update leaderboard
-					leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
 					updateTasks.Add(_documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard));
 
 					// Add $20 to lottery for interaction
