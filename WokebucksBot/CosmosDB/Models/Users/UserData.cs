@@ -1,6 +1,7 @@
 ﻿using Discord.WebSocket;
 using Newtonsoft.Json;
 using Swamp.WokebucksBot.Bot.Extensions;
+using System.Linq;
 
 namespace Swamp.WokebucksBot.CosmosDB
 {
@@ -21,6 +22,12 @@ namespace Swamp.WokebucksBot.CosmosDB
         [JsonProperty(PropertyName = "lvl", Required = Required.Always)]
         public uint Level { get; set; }
 
+        [JsonProperty(PropertyName = "cncl", Required = Required.Always)]
+        public IDictionary<string, string> CancelTickets { get; set; }
+
+        [JsonProperty(PropertyName = "tckts", Required = Required.Always)]
+        public IDictionary<string, string> CreatedTickets { get; set; }
+
         public UserData(SocketUser user) : base(user.Id.ToString())
         {
             Balance = 0;
@@ -28,6 +35,8 @@ namespace Swamp.WokebucksBot.CosmosDB
             TransactionLog = new List<Transaction>();
             Username = user.GetFullUsername();
             Level = uint.MinValue;
+            CancelTickets = new Dictionary<string, string>();
+            CreatedTickets = new Dictionary<string, string>();
         }
 
         [JsonConstructor]
@@ -38,6 +47,8 @@ namespace Swamp.WokebucksBot.CosmosDB
             TransactionLog = new List<Transaction>();
             Username = string.Empty;
             Level = uint.MinValue;
+            CancelTickets = new Dictionary<string, string>();
+            CreatedTickets = new Dictionary<string, string>();
         }
 
         public void UpdateUsernameAndAddToBalance(double amount, string username)
@@ -76,6 +87,33 @@ namespace Swamp.WokebucksBot.CosmosDB
             if (TransactionLog.Count > 10)
             {
                 TransactionLog = TransactionLog.OrderByDescending(x => x.TimeStamp).Take(10).ToList();
+            }
+        }
+
+        public void CancelUser(string transactionInitiator, string updatedUsername)
+        {
+            // If the user's balance is positive, reset it to 0; if the user's balance is negative, double it
+            double amount = (this.Balance >= 0) ? this.Balance * -1 : this.Balance;
+
+            this.AddTransaction(transactionInitiator, "This person was canceled.", amount);
+            this.UpdateUsernameAndAddToBalance(amount, updatedUsername);
+        }
+
+        public void AddCancelTicket(CancelTicket cancelTicket)
+        {
+            CancelTickets.Add(cancelTicket.ID, $"Started by {cancelTicket.InitiatorUsername} because \"{cancelTicket.Description}\".");
+            if (CancelTickets.Count > 10)
+            {
+                CancelTickets = CancelTickets.Take(10).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+
+        public void AddCreatedTicket(CancelTicket createdTicket)
+        {
+            CreatedTickets.Add(createdTicket.ID, $"Started for {createdTicket.TargetUsername} because \"{createdTicket.Description}\".");
+            if (CreatedTickets.Count > 10)
+            {
+                CreatedTickets = CreatedTickets.Take(10).ToDictionary(x => x.Key, x => x.Value);
             }
         }
 
