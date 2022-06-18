@@ -202,7 +202,7 @@ namespace Swamp.WokebucksBot.Bot
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
 
-				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", embed: embedBuilder.Build()));
+				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync($"<@{winner.ID}>", embed: embedBuilder.Build()));
 
 				await Task.WhenAll(writesToLotteriesAndUsers);
 
