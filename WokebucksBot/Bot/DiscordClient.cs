@@ -460,7 +460,7 @@ namespace Swamp.WokebucksBot.Bot
 				// Send message to notify user of cancellation
 				if (announceEmbedBuilder is not null)
                 {
-					messageTasks.Add(component.Channel.SendMessageAsync($"@<{ticket.Target}>", embed: announceEmbedBuilder.Build()));
+					messageTasks.Add(component.Channel.SendMessageAsync($"<@{ticket.Target}>", embed: announceEmbedBuilder.Build()));
 				}
 
 				await Task.WhenAll(messageTasks);
@@ -479,7 +479,7 @@ namespace Swamp.WokebucksBot.Bot
 				CancelTicket ticket = await _documentClient.GetDocumentAsync<CancelTicket>(cancelTicketId) ?? throw new NullReferenceException($"Couldn't find cancel ticket with ID <{cancelTicketId}>.");
 
 				var embedBuilder = new EmbedBuilder();
-				embedBuilder.WithColor(Color.Teal);
+				embedBuilder.WithColor(ticket.Success ? Color.Green : Color.Gold);
 				embedBuilder.WithTitle("Cancel Ticket");
 				embedBuilder.AddField("Plaintiff", ticket.InitiatorUsername);
 				embedBuilder.AddField("Defendant", ticket.TargetUsername);
