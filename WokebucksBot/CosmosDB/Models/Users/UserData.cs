@@ -93,7 +93,7 @@ namespace Swamp.WokebucksBot.CosmosDB
         public void CancelUser(string transactionInitiator)
         {
             // If the user's balance is positive, reset it to 0; if the user's balance is negative, double it
-            double amount = (this.Balance >= 0) ? 0 : this.Balance * 2;
+            double amount = (this.Balance > 0) ? this.Balance * -1 : this.Balance;
 
             this.AddTransaction(transactionInitiator, "This person was canceled.", amount);
             this.AddToBalance(amount);

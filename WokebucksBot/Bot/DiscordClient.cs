@@ -202,7 +202,7 @@ namespace Swamp.WokebucksBot.Bot
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
 
-				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", allowedMentions: new AllowedMentions() { UserIds = new List<ulong>() { ulong.Parse(winner.ID) } }, embed: embedBuilder.Build()));
+				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", embed: embedBuilder.Build()));
 
 				await Task.WhenAll(writesToLotteriesAndUsers);
 
@@ -438,7 +438,7 @@ namespace Swamp.WokebucksBot.Bot
 					announceEmbedBuilder.WithColor(Color.Red)
 										.WithTitle($"{ticket.TargetUsername} Has Been Cancelled")
 										.WithDescription($"Cancellation request initiated by {ticket.InitiatorUsername} has passed with six (6) votes.")
-										.AddField($"{ticket.TargetUsername}'s New Balance", "$" + string.Format("{0:0.00}", targetUser))
+										.AddField($"{ticket.TargetUsername}'s New Balance", "$" + string.Format("{0:0.00}", targetUser.Balance))
 										.WithFooter($"{ticket.InitiatorUsername}'s Cancel Ticket handled by Wokebucks")
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
@@ -455,12 +455,12 @@ namespace Swamp.WokebucksBot.Bot
 									 .WithUrl("https://github.com/chicklightning/WokebucksBot")
 									 .WithCurrentTimestamp();
 
-				messageTasks.Add(component.FollowupAsync("", ephemeral: true, allowedMentions: new AllowedMentions() { UserIds = new List<ulong>() { ulong.Parse(ticket.Target) } }, embed: ephemeralEmbedBuilder.Build()));
+				messageTasks.Add(component.FollowupAsync("", ephemeral: true, embed: ephemeralEmbedBuilder.Build()));
 				
 				// Send message to notify user of cancellation
 				if (announceEmbedBuilder is not null)
                 {
-					messageTasks.Add(component.Channel.SendMessageAsync("", embed: announceEmbedBuilder.Build()));
+					messageTasks.Add(component.Channel.SendMessageAsync($"@<{ticket.Target}>", embed: announceEmbedBuilder.Build()));
 				}
 
 				await Task.WhenAll(messageTasks);
