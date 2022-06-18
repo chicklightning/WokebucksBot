@@ -31,7 +31,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			var embedBuilder = new EmbedBuilder();
 			if (string.IsNullOrWhiteSpace(bettingReason))
 			{
-				await FollowupWithFormattedError(Context.User, embedBuilder, $"You must provide a reason for the bet, since this will be the name of the bet.");
+				await FollowupWithFormattedError(Context.User, embedBuilder, "You must provide a reason for the bet, since this will be the name of the bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user did not provide a bet reason.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -39,7 +39,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			List<string> options = optionsString.Split(',').ToList();
 			if (options.Count() <= 1 || options.Count() > 6)
             {
-				await FollowupWithFormattedError(Context.User, embedBuilder, $"You have to provide at least two (and no more than six) options to start a bet.");
+				await FollowupWithFormattedError(Context.User, embedBuilder, "You have to provide at least two (and no more than six) options to start a bet.");
 				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user did not provide enough options for bet, or provided too many.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -54,7 +54,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			}
 			catch (Exception e)
             {
-				await FollowupWithFormattedError(Context.User, embedBuilder, $"You have to provide text for all options.");
+				await FollowupWithFormattedError(Context.User, embedBuilder, "You have to provide text for all options.");
 				_logger.LogError(e, $"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since user provided a null or empty option.", "startbet", Context.User.GetFullUsername());
 				return;
 			}
@@ -66,21 +66,20 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			var menuBuilder = new SelectMenuBuilder()
 									.WithPlaceholder("Select an option to place your bet on.")
 									.WithCustomId(bet.ID);
-			int count = 1;
+
 			foreach (string option in bet.OptionTotals.Keys)
             {
 				// Display option, underlying value is combined bet ID and option ID
 				menuBuilder.AddOption(option, new Bet.BetOptionKey(bet.ID, option, Context.Guild.Id.ToString()).FullKey);
-				count++;
             }
 
 			var builder = new ComponentBuilder()
 				.WithSelectMenu(menuBuilder);
 
 			embedBuilder.WithColor(Color.Gold);
-			embedBuilder.WithTitle($"Starting Bet");
-			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Started By", $"{Context.User.GetFullUsername()}");
+			embedBuilder.WithTitle("Starting Bet");
+			embedBuilder.AddField("Bet", bet.Reason);
+			embedBuilder.AddField("Started By", Context.User.GetFullUsername());
 			embedBuilder.WithFooter($"{Context.User.GetFullUsername()}'s Bet handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 			embedBuilder.WithCurrentTimestamp();

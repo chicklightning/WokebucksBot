@@ -67,7 +67,7 @@ namespace Swamp.WokebucksBot.Bot
 				_discordSocketClient.MessageReceived += HandleCommandAsync;
 				_discordSocketClient.ButtonExecuted += HandleButtonAsync;
 				_discordSocketClient.JoinedGuild += JoinedGuildAsync;
-				_discordSocketClient.SelectMenuExecuted += BetMenuHandler;
+				_discordSocketClient.SelectMenuExecuted += SelectMenuHandler;
 				_discordSocketClient.ModalSubmitted += BetModalHandler;
 
                 _commands.CommandExecuted += OnCommandExecutedAsync;
@@ -469,27 +469,50 @@ namespace Swamp.WokebucksBot.Bot
 			}
 		}
 
-		public async Task BetMenuHandler(SocketMessageComponent component)
+		public async Task SelectMenuHandler(SocketMessageComponent component)
 		{
-			var betOptionFullKey = string.Join(", ", component.Data.Values);
-			var betOptionKey = new Bet.BetOptionKey(betOptionFullKey);
+			if (string.Equals(component.Data.CustomId, "cancel"))
+            {
+				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "seeticket", component.User.GetFullUsername());
 
-			// Set up modal to let user add bet amount
-			var tb = new TextInputBuilder()
-							.WithLabel("Bet Amount")
-							.WithCustomId($"{betOptionKey.FullKey}")
-							.WithStyle(TextInputStyle.Short)
-							.WithMinLength(1)
-							.WithMaxLength(3)
-							.WithRequired(true)
-							.WithPlaceholder("Write \"1\" to bet $1.");
+				string cancelTicketId = component.Data.CustomId.Replace("cancel", string.Empty);
+				CancelTicket ticket = await _documentClient.GetDocumentAsync<CancelTicket>(cancelTicketId) ?? throw new NullReferenceException($"Couldn't find cancel ticket with ID <{cancelTicketId}>.");
 
-			var mb = new ModalBuilder()
-							.WithTitle("Bet Amount")
-							.WithCustomId($"{betOptionKey.FullKey}")
-							.AddTextInput(tb);
+				var embedBuilder = new EmbedBuilder();
+				embedBuilder.WithColor(Color.Teal);
+				embedBuilder.WithTitle("Cancel Ticket");
+				embedBuilder.AddField("Plaintiff", ticket.InitiatorUsername);
+				embedBuilder.AddField("Defendant", ticket.TargetUsername);
+				embedBuilder.AddField("Reason for Cancellation", ticket.Description);
+				embedBuilder.AddField("Votes", ticket.Votes.Count);
+				embedBuilder.WithFooter($"{component.User.GetFullUsername()}'s Cancel Ticket Information provided by Wokebucks");
+				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
+				embedBuilder.WithCurrentTimestamp();
 
-			await component.RespondWithModalAsync(mb.Build());
+				await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
+			}
+			else
+            {
+				var betOptionFullKey = string.Join(", ", component.Data.Values);
+				var betOptionKey = new Bet.BetOptionKey(betOptionFullKey);
+
+				// Set up modal to let user add bet amount
+				var tb = new TextInputBuilder()
+								.WithLabel("Bet Amount")
+								.WithCustomId(betOptionKey.FullKey)
+								.WithStyle(TextInputStyle.Short)
+								.WithMinLength(1)
+								.WithMaxLength(3)
+								.WithRequired(true)
+								.WithPlaceholder("Write \"1\" to bet $1. You can bet up to $20.");
+
+				var mb = new ModalBuilder()
+								.WithTitle("Bet Amount")
+								.WithCustomId(betOptionKey.FullKey)
+								.AddTextInput(tb);
+
+				await component.RespondWithModalAsync(mb.Build());
+			}
 		}
 
 		public async Task BetModalHandler(SocketModal modal)
@@ -580,10 +603,10 @@ namespace Swamp.WokebucksBot.Bot
 
 			// Respond to the modal.
 			embedBuilder.WithColor(Color.Blue);
-			embedBuilder.WithTitle($"Wager Entered");
-			embedBuilder.AddField("Bet", $"{bet.Reason}");
-			embedBuilder.AddField("Wager Made By", $"{modal.User.GetFullUsername()}");
-			embedBuilder.AddField("Option Selected", $"{betOptionKey.OptionId}");
+			embedBuilder.WithTitle("Wager Entered");
+			embedBuilder.AddField("Bet", bet.Reason);
+			embedBuilder.AddField("Wager Made By", modal.User.GetFullUsername());
+			embedBuilder.AddField("Option Selected", betOptionKey.OptionId);
 			embedBuilder.AddField("Bet Amount", "$" + string.Format("{0:0.00}", betAmount));
 			embedBuilder.WithFooter($"{modal.User.GetFullUsername()}'s Wager handled by Wokebucks");
 			embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
