@@ -90,31 +90,23 @@ namespace Swamp.WokebucksBot.CosmosDB
             }
         }
 
-        public void CancelUser(string transactionInitiator, string updatedUsername)
+        public void CancelUser(string transactionInitiator)
         {
             // If the user's balance is positive, reset it to 0; if the user's balance is negative, double it
-            double amount = (this.Balance >= 0) ? this.Balance * -1 : this.Balance;
+            double amount = (this.Balance >= 0) ? 0 : this.Balance * 2;
 
             this.AddTransaction(transactionInitiator, "This person was canceled.", amount);
-            this.UpdateUsernameAndAddToBalance(amount, updatedUsername);
+            this.AddToBalance(amount);
         }
 
         public void AddCancelTicket(CancelTicket cancelTicket)
         {
             CancelTickets.Add(cancelTicket.ID, $"Started by {cancelTicket.InitiatorUsername} because \"{cancelTicket.Description}\".");
-            if (CancelTickets.Count > 10)
-            {
-                CancelTickets = CancelTickets.Take(10).ToDictionary(x => x.Key, x => x.Value);
-            }
         }
 
         public void AddCreatedTicket(CancelTicket createdTicket)
         {
             CreatedTickets.Add(createdTicket.ID, $"Started for {createdTicket.TargetUsername} because \"{createdTicket.Description}\".");
-            if (CreatedTickets.Count > 10)
-            {
-                CreatedTickets = CreatedTickets.Take(10).ToDictionary(x => x.Key, x => x.Value);
-            }
         }
 
         public bool IsOverdrawn() => Balance < 0;

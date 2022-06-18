@@ -30,7 +30,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 		}
 
 		[Command("cancel")]
-		[Summary("Puts up a vote for a user to be canceled (doubles a negative balance or sets a positive balance to 0).")]
+		[Summary("Puts up a vote for a user to be canceled (doubles a negative balance or sets a positive balance to 0). If you had a previous ticket against this user, this will overwrite that ticket.")]
 		public async Task CancelUserAsync(
 			[Summary("The reason you are canceling this user.")]
 			string reason,
@@ -62,57 +62,63 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			}
 
 			// See if user has a current ticket against this user already:
-			UserData targetData = await _documentClient.GetDocumentAsync<UserData>(targetUser.Id.ToString()) ?? new UserData(targetUser);
-			if (targetData.CancelTickets.ContainsKey(CancelTicket.CreateGuidFromTicketInitiatorAndTarget(Context.User.Id.ToString(), targetUser.Id.ToString())))
-            {
-				await RespondWithFormattedError(embedBuilder, "You already have an active cancellation ticket open for this user!");
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since open ticket already exists against target user <{targetUser.GetFullUsername()}>.", "cancel", Context.User.GetFullUsername());
+			string ticketId = CancelTicket.CreateDeterministicTicketGuid(Context.User.Id.ToString(), targetUser.Id.ToString());
+			CancelTicket? ticket = await _documentClient.GetDocumentAsync<CancelTicket>(ticketId);
+			if (ticket is not null && ticket.TicketOpened.AddDays(2) > DateTimeOffset.UtcNow)
+			{
+				await RespondWithFormattedError(embedBuilder, "You have to wait at least two (2) days before opening a new ticket against this user.");
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "cancel", Context.User.GetFullUsername());
 				return;
 			}
-			else
-            {
-				UserData initiatorData = await _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString()) ?? new UserData(Context.User);
 
-				// Add ticket to both users:
-				var ticket = new CancelTicket(targetUser, Context.User, reason);
-				initiatorData.AddCreatedTicket(ticket);
-				targetData.AddCancelTicket(ticket);
+			// It's been at least two days, so overwrite this ticket:
+			ticket = new CancelTicket(targetUser, Context.User, reason);
+			Task<UserData?> fetchTargetData = _documentClient.GetDocumentAsync<UserData>(targetUser.Id.ToString());
+			Task<UserData?> fetchInitiatorData = _documentClient.GetDocumentAsync<UserData>(Context.User.Id.ToString());
 
-				Task writeTicketTask = _documentClient.UpsertDocumentAsync<CancelTicket>(ticket);
-				Task writeInitiatorTask = _documentClient.UpsertDocumentAsync<UserData>(initiatorData);
-				Task writeTargetTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
+			await Task.WhenAll(fetchTargetData, fetchInitiatorData);
+			UserData targetData = await fetchTargetData ?? new UserData(targetUser);
+			UserData initiatorData = await fetchInitiatorData ?? new UserData(Context.User);
 
-				await Task.WhenAll(writeTicketTask, writeInitiatorTask, writeTargetTask);
+			// Add ticket to both users:
+			ticket = new CancelTicket(targetUser, Context.User, reason);
+			initiatorData.AddCreatedTicket(ticket);
+			targetData.AddCancelTicket(ticket);
 
-				var ticketEmoji = new Emoji("\uD83D\uDEAB");
-				var buttonBuilder = new ButtonBuilder()
-											.WithEmote(ticketEmoji)
-											.WithLabel("Vote to Cancel")
-											.WithCustomId($"cancel{ticket.ID}")
-											.WithStyle(ButtonStyle.Danger);
-				var componentBuilder = new ComponentBuilder()
-											.WithButton(buttonBuilder);
+			Task writeTicketTask = _documentClient.UpsertDocumentAsync<CancelTicket>(ticket);
+			Task writeInitiatorTask = _documentClient.UpsertDocumentAsync<UserData>(initiatorData);
+			Task writeTargetTask = _documentClient.UpsertDocumentAsync<UserData>(targetData);
 
-				embedBuilder.WithColor(Color.Red)
-							.WithTitle($"{Context.User.GetFullUsername()} Submitted a Ticket to Cancel {targetUser.GetFullUsername()}")
-							.WithDescription("If this request gets at least six (6) votes in favor of cancelling, the target user will be cancelled.")
-							.WithFooter($"{Context.User.GetFullUsername()}'s Cancellation Request handled by Wokebucks")
-							.WithUrl("https://github.com/chicklightning/WokebucksBot")
-							.WithCurrentTimestamp();
+			await Task.WhenAll(writeTicketTask, writeInitiatorTask, writeTargetTask);
 
-				await ReplyAsync("", embed: embedBuilder.Build(), components: componentBuilder.Build());
-			}
+			var ticketEmoji = new Emoji("\uD83D\uDEAB");
+			var buttonBuilder = new ButtonBuilder()
+										.WithEmote(ticketEmoji)
+										.WithLabel("Vote to Cancel")
+										.WithCustomId($"cancel{ticket.ID}")
+										.WithStyle(ButtonStyle.Danger);
+			var componentBuilder = new ComponentBuilder()
+										.WithButton(buttonBuilder);
+
+			embedBuilder.WithColor(Color.Red)
+						.WithTitle($"{Context.User.GetFullUsername()} Submitted a Ticket to Cancel {targetUser.GetFullUsername()}")
+						.WithDescription("If this request gets at least six (6) votes in favor of cancelling, the target user will be cancelled.")
+						.WithFooter($"{Context.User.GetFullUsername()}'s Cancellation Request handled by Wokebucks")
+						.WithUrl("https://github.com/chicklightning/WokebucksBot")
+						.WithCurrentTimestamp();
+
+			await ReplyAsync("", embed: embedBuilder.Build(), components: componentBuilder.Build());
 		}
 
 		[Command("tickets")]
-		[Summary("See all of the tickets you've opened.")]
+		[Summary("See all of your current tickets.")]
 		public async Task GetTicketsAsync()
 		{
 
 		}
 
 		[Command("complaints")]
-		[Summary("See all of the tickets opened against you.")]
+		[Summary("See all current tickets against you.")]
 		public async Task GetComplaintsAsync()
 		{
 

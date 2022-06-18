@@ -202,7 +202,7 @@ namespace Swamp.WokebucksBot.Bot
 										.WithUrl("https://github.com/chicklightning/WokebucksBot")
 										.WithCurrentTimestamp();
 
-				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", embed: embedBuilder.Build()));
+				writesToLotteriesAndUsers.Add(context.Channel.SendMessageAsync("", allowedMentions: new AllowedMentions() { UserIds = new List<ulong>() { ulong.Parse(winner.ID) } }, embed: embedBuilder.Build()));
 
 				await Task.WhenAll(writesToLotteriesAndUsers);
 
@@ -246,7 +246,7 @@ namespace Swamp.WokebucksBot.Bot
 				var embedBuilder = new EmbedBuilder();
 				UserData userData = await fetchUser ?? new UserData(component.User);
 				if (userData.Balance < -100)
-                {
+				{
 					await component.FollowupWithErrorAsync(embedBuilder, component.User, $"You cannot buy tickets if you have less than $-100.00.");
 					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have too low of a balance.", "lotteryticket", component.User.GetFullUsername());
 					return;
@@ -286,9 +286,9 @@ namespace Swamp.WokebucksBot.Bot
 				UserData userData = await _documentClient.GetDocumentAsync<UserData>(component.User.Id.ToString()) ?? new UserData(component.User);
 
 				if (userData.Level < 11)
-                {
+				{
 					if (userData.Balance < Levels.AllLevels[userData.Level + 1].Amount)
-                    {
+					{
 						await component.FollowupWithErrorAsync(embedBuilder, component.User, "You're too poor to buy this level.");
 						_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have too low of a balance.", "buylevel", component.User.GetFullUsername());
 						return;
@@ -321,10 +321,10 @@ namespace Swamp.WokebucksBot.Bot
 
 					userData.Level += 1;
 					var newLevel = Levels.AllLevels[userData.Level];
-					
+
 					// Change roles and update leaderboards
 					foreach (var guild in mutualGuilds)
-                    {
+					{
 						SocketRole newRole = guild.Roles.First(role => role.Name == newLevel.Name);
 						IGuildUser user = guild.GetUser(component.User.Id);
 						updateTasks.Add(user.AddRoleAsync(newRole));
@@ -354,21 +354,118 @@ namespace Swamp.WokebucksBot.Bot
 					await Task.WhenAll(updateTasks);
 
 					embedBuilder.WithColor(newLevel.Color)
-							.WithTitle("You Purchased a Level")
-							.WithDescription($"You are now a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}.")
-							.WithFooter($"{component.User.GetFullUsername()}'s Level Purchase handled by Wokebucks")
-							.WithUrl("https://github.com/chicklightning/WokebucksBot")
-							.WithCurrentTimestamp();
+								.WithTitle("You Purchased a Level")
+								.WithDescription($"You are now a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}.")
+								.WithFooter($"{component.User.GetFullUsername()}'s Level Purchase handled by Wokebucks")
+								.WithUrl("https://github.com/chicklightning/WokebucksBot")
+								.WithCurrentTimestamp();
 
 					await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
 					_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "buylevel", component.User.GetFullUsername());
 				}
 				else
-                {
+				{
 					await component.FollowupWithErrorAsync(embedBuilder, component.User, "You are already the highest woke level available, congratulations!");
 					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since they have already reached max level.", "buylevel", component.User.GetFullUsername());
 					return;
 				}
+			}
+			else if (component.Data.CustomId.Contains("cancel"))
+            {
+				await component.DeferAsync();
+				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "cancelvote", component.User.GetFullUsername());
+
+				string cancelTicketId = component.Data.CustomId.Replace("cancel", string.Empty);
+				CancelTicket ticket = await _documentClient.GetDocumentAsync<CancelTicket>(cancelTicketId) ?? throw new NullReferenceException($"Couldn't find cancel ticket with ID <{cancelTicketId}>.");
+
+				var ephemeralEmbedBuilder = new EmbedBuilder();
+				if (ticket.Success)
+                {
+					await component.FollowupWithErrorAsync(ephemeralEmbedBuilder, component.User, "This cancellation ticket has already been fulfilled.");
+					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since this cancellation ticket has already been fulfilled.", "cancelvote", component.User.GetFullUsername());
+					return;
+				}
+
+				if (ticket.Votes.Contains(component.User.Id.ToString()))
+                {
+					await component.FollowupWithErrorAsync(ephemeralEmbedBuilder, component.User, "You already voted on this ticket.");
+					_logger.LogInformation($"<{{{CommandName}}}> command failed to be invoked by user <{{{UserIdKey}}}> since this cancellation ticket has already been fulfilled.", "cancelvote", component.User.GetFullUsername());
+					return;
+				}
+
+				ticket.Votes.Add(component.User.Id.ToString());
+				ticket.Success = ticket.Votes.Count == 5;
+
+				var writeTasks = new List<Task>();
+				writeTasks.Add(_documentClient.UpsertDocumentAsync<CancelTicket>(ticket));
+				EmbedBuilder? announceEmbedBuilder = null;
+				if (ticket.Success)
+                {
+					// Cancel the target user, update the leaderboard and write back to the database:
+					Task<UserData?> getTargetUser = _documentClient.GetDocumentAsync<UserData>(ticket.Target);
+					Task<Leaderboard?> getLeaderboard = _documentClient.GetDocumentAsync<Leaderboard>("leaderboard");
+
+					await Task.WhenAll(getTargetUser, getLeaderboard);
+
+					Leaderboard? leaderboard = await getLeaderboard;
+					if (leaderboard is null)
+					{
+						var e = new InvalidOperationException("Could not find leaderboard.");
+						_logger.LogError(e, "Could not find leaderboard.");
+						throw e;
+					}
+
+					UserData? targetUser = await getTargetUser;
+					if (targetUser is null)
+					{
+						var e = new InvalidOperationException("Could not find target user.");
+						_logger.LogError(e, "Could not find target user.");
+						throw e;
+					}
+
+					targetUser.CancelUser(ticket.InitiatorUsername);
+
+					// Update the leaderboard
+					var channel = component.Channel as SocketGuildChannel;
+					SocketGuild commandGuild = channel?.Guild ?? throw new ArgumentNullException("Unable to find guild associated with channel.");
+					leaderboard.ReconcileLeaderboard(targetUser.ID, targetUser.Balance, commandGuild.Id.ToString());
+
+					// Write all the data back to the db:
+					writeTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(targetUser));
+					writeTasks.Add(_documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard));
+
+					announceEmbedBuilder = new EmbedBuilder();
+					announceEmbedBuilder.WithColor(Color.Red)
+										.WithTitle($"{ticket.TargetUsername} Has Been Cancelled")
+										.WithDescription($"Cancellation request initiated by {ticket.InitiatorUsername} has passed with six (6) votes.")
+										.AddField($"{ticket.TargetUsername}'s New Balance", "$" + string.Format("{0:0.00}", targetUser))
+										.WithFooter($"{ticket.InitiatorUsername}'s Cancel Ticket handled by Wokebucks")
+										.WithUrl("https://github.com/chicklightning/WokebucksBot")
+										.WithCurrentTimestamp();
+				}
+
+				await Task.WhenAll(writeTasks);
+
+				var messageTasks = new List<Task>();
+				string description = ticket.Success ? "Six (6) votes have been cast in favor of cancellation." : $"Only {6 - ticket.Votes.Count} votes needed to cancel.";
+				ephemeralEmbedBuilder.WithColor(Color.Teal)
+									 .WithTitle($"You Voted to Cancel {ticket.TargetUsername}")
+									 .WithDescription(description)
+									 .WithFooter($"{component.User.GetFullUsername()}'s Cancel Vote handled by Wokebucks")
+									 .WithUrl("https://github.com/chicklightning/WokebucksBot")
+									 .WithCurrentTimestamp();
+
+				messageTasks.Add(component.FollowupAsync("", ephemeral: true, allowedMentions: new AllowedMentions() { UserIds = new List<ulong>() { ulong.Parse(ticket.Target) } }, embed: ephemeralEmbedBuilder.Build()));
+				
+				// Send message to notify user of cancellation
+				if (announceEmbedBuilder is not null)
+                {
+					messageTasks.Add(component.Channel.SendMessageAsync("", embed: announceEmbedBuilder.Build()));
+				}
+
+				await Task.WhenAll(messageTasks);
+
+				_logger.LogInformation($"<{{{CommandName}}}> command successfully invoked by user <{{{UserIdKey}}}>.", "cancelvote", component.User.GetFullUsername());
 			}
 		}
 

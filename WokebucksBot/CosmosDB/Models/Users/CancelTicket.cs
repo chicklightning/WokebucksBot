@@ -33,7 +33,7 @@ namespace Swamp.WokebucksBot.CosmosDB
         public bool Success { get; set; }
 
         // TODO: change to use datetime
-        public static string CreateGuidFromTicketInitiatorAndTarget(string initiatorId, string targetId)
+        public static string CreateDeterministicTicketGuid(string initiatorId, string targetId)
         {
             byte[] message = Encoding.UTF8.GetBytes(initiatorId + targetId);
             using var alg = SHA512.Create();
@@ -42,7 +42,7 @@ namespace Swamp.WokebucksBot.CosmosDB
             return new Guid(hashValue).ToString();
         }
 
-        public CancelTicket(SocketUser target, SocketUser initiator, string description) : base(CreateGuidFromTicketInitiatorAndTarget(initiator.Id.ToString(), target.Id.ToString()))
+        public CancelTicket(SocketUser target, SocketUser initiator, string description) : base(CreateDeterministicTicketGuid(initiator.Id.ToString(), target.Id.ToString()))
         {
             Votes = new HashSet<string>();
             TicketOpened = DateTimeOffset.UtcNow;
@@ -57,7 +57,7 @@ namespace Swamp.WokebucksBot.CosmosDB
         private CancelTicket()
         {
             Votes = new HashSet<string>();
-            TicketOpened = DateTimeOffset.UtcNow;
+            TicketOpened = DateTimeOffset.MinValue;
             Description = string.Empty;
             Initiator = string.Empty;
             InitiatorUsername = string.Empty;
