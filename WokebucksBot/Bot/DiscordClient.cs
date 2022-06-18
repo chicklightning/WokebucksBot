@@ -322,6 +322,11 @@ namespace Swamp.WokebucksBot.Bot
 					userData.Level += 1;
 					var newLevel = Levels.AllLevels[userData.Level];
 
+					// Update user amounts and transactions
+					userData.UpdateUsernameAndAddToBalance(newLevel.Amount * -1, component.User.GetFullUsername());
+					userData.AddTransaction("Wokebucks Leveling System", $"Purchased the next level so now they're a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}!", newLevel.Amount * -1);
+					updateTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
+
 					// Change roles and update leaderboards
 					foreach (var guild in mutualGuilds)
 					{
@@ -338,11 +343,6 @@ namespace Swamp.WokebucksBot.Bot
 
 						leaderboard.UpdateLeaderboard(guild.Id.ToString(), component.User, userData.Balance);
 					}
-
-					// Update user amounts and transactions
-					userData.UpdateUsernameAndAddToBalance(newLevel.Amount * -1, component.User.GetFullUsername());
-					userData.AddTransaction("Wokebucks Leveling System", $"Purchased the next level so now they're a{(newLevel.Name[0] == 'E' || newLevel.Name[0] == 'U' ? "n" : string.Empty)} {newLevel.Name}!", newLevel.Amount * -1);
-					updateTasks.Add(_documentClient.UpsertDocumentAsync<UserData>(userData));
 
 					// Update leaderboard
 					updateTasks.Add(_documentClient.UpsertDocumentAsync<Leaderboard>(leaderboard));
