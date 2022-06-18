@@ -394,7 +394,7 @@ namespace Swamp.WokebucksBot.Bot
 				}
 
 				ticket.Votes.Add(component.User.Id.ToString());
-				ticket.Success = ticket.Votes.Count == 5;
+				ticket.Success = ticket.Votes.Count == 6;
 
 				var writeTasks = new List<Task>();
 				writeTasks.Add(_documentClient.UpsertDocumentAsync<CancelTicket>(ticket));
