@@ -475,7 +475,7 @@ namespace Swamp.WokebucksBot.Bot
             {
 				_logger.LogInformation($"<{{{CommandName}}}> command invoked by user <{{{UserIdKey}}}>.", "seeticket", component.User.GetFullUsername());
 
-				string cancelTicketId = component.Data.CustomId.Replace("cancel", string.Empty);
+				string cancelTicketId = string.Join(", ", component.Data.Values);
 				CancelTicket ticket = await _documentClient.GetDocumentAsync<CancelTicket>(cancelTicketId) ?? throw new NullReferenceException($"Couldn't find cancel ticket with ID <{cancelTicketId}>.");
 
 				var embedBuilder = new EmbedBuilder();
@@ -489,7 +489,7 @@ namespace Swamp.WokebucksBot.Bot
 				embedBuilder.WithUrl("https://github.com/chicklightning/WokebucksBot");
 				embedBuilder.WithCurrentTimestamp();
 
-				await component.FollowupAsync("", ephemeral: true, embed: embedBuilder.Build());
+				await component.RespondAsync("", ephemeral: true, embed: embedBuilder.Build());
 			}
 			else
             {
