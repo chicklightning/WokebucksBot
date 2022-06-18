@@ -245,7 +245,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 				targetData.UpdateUsernameAndAddToBalance(amount, target.GetFullUsername());
 				targetData.AddTransaction(Context.User.GetFullUsername(), reason, amount);
 
-				// Update leaderboard
+				// Update leaderboard for all guilds:
 				leaderboard.UpdateLeaderboard(Context.Guild.Id.ToString(), target, targetData.Balance);
 
 				// Add $1 to lottery pool:
