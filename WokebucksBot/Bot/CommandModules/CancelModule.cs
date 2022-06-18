@@ -61,7 +61,7 @@ namespace Swamp.WokebucksBot.Bot.CommandModules
 			if (ticket is not null && ticket.TicketOpened.AddDays(2) > DateTimeOffset.UtcNow)
 			{
 				await RespondWithFormattedError(embedBuilder, "You have to wait at least two (2) days before opening a new ticket against this user.");
-				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> targeting unknown user.", "cancel", Context.User.GetFullUsername());
+				_logger.LogError($"<{{{CommandName}}}> command failed for user <{{{UserIdKey}}}> since ticket from the last two days already exists for target.", "cancel", Context.User.GetFullUsername());
 				return;
 			}
 
